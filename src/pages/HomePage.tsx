@@ -53,9 +53,29 @@ function JobInputForm({ onJobAnalyzed }: JobInputFormProps) {
     }
   }
 
-  const analyzeJobPost = async () => {
+  const validateInput = () => {
     if (!jobDescription.trim()) {
       setError('Please provide a job description')
+      return false
+    }
+
+    if (jobDescription.trim().length < 50) {
+      setError('Job description must be at least 50 characters long. Please provide a more detailed job description.')
+      return false
+    }
+
+    // Check if the job description contains meaningful content
+    const meaningfulWords = jobDescription.trim().split(/\s+/).filter(word => word.length > 2)
+    if (meaningfulWords.length < 10) {
+      setError('Please provide a more detailed job description with at least 10 meaningful words.')
+      return false
+    }
+
+    return true
+  }
+
+  const analyzeJobPost = async () => {
+    if (!validateInput()) {
       return
     }
 
@@ -70,13 +90,15 @@ function JobInputForm({ onJobAnalyzed }: JobInputFormProps) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          jobDescription,
-          companyName: companyName || undefined,
-          jobTitle: jobTitle || undefined
+          jobDescription: jobDescription.trim(),
+          companyName: companyName.trim() || undefined,
+          jobTitle: jobTitle.trim() || undefined
         })
       })
 
       if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Response error:', errorText)
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
@@ -84,6 +106,11 @@ function JobInputForm({ onJobAnalyzed }: JobInputFormProps) {
 
       if (!data.success) {
         throw new Error(data.error || 'Failed to analyze job posting')
+      }
+
+      // Validate that we received proper analysis data
+      if (!data.analysis || typeof data.analysis !== 'object') {
+        throw new Error('Invalid analysis data received')
       }
 
       toast.success('Job posting analyzed successfully!')
@@ -94,11 +121,11 @@ function JobInputForm({ onJobAnalyzed }: JobInputFormProps) {
         state: { 
           jobAnalysis: data.analysis,
           jobDetails: {
-            title: jobTitle,
-            company: companyName,
-            description: jobDescription,
+            title: jobTitle.trim() || 'Untitled Position',
+            company: companyName.trim() || 'Company',
+            description: jobDescription.trim(),
             cvFile: cvFile?.name,
-            coverLetter
+            coverLetter: coverLetter.trim()
           }
         } 
       })
@@ -107,7 +134,7 @@ function JobInputForm({ onJobAnalyzed }: JobInputFormProps) {
       console.error('Error analyzing job post:', err)
       
       // Set user-friendly error message
-      let errorMessage = 'Could not analyze the job post. Please check the URL and try again.'
+      let errorMessage = 'Could not analyze the job post. Please check your input and try again.'
       
       if (err instanceof Error) {
         // Handle specific error types
@@ -118,7 +145,9 @@ function JobInputForm({ onJobAnalyzed }: JobInputFormProps) {
         } else if (err.message.includes('429')) {
           errorMessage = 'Too many requests. Please wait a moment and try again.'
         } else if (err.message.includes('500')) {
-          errorMessage = 'Server error. Please try again in a few minutes.'
+          errorMessage = 'Server error. The job description might be too short or unclear. Please provide a more detailed job description and try again.'
+        } else if (err.message.includes('Invalid JSON') || err.message.includes('Invalid analysis')) {
+          errorMessage = 'The job description provided was not detailed enough for analysis. Please provide a complete job posting with requirements, responsibilities, and qualifications.'
         }
       }
       
@@ -128,6 +157,8 @@ function JobInputForm({ onJobAnalyzed }: JobInputFormProps) {
       setIsAnalyzing(false)
     }
   }
+
+  const isFormValid = jobDescription.trim().length >= 50
 
   return (
     <Card className="w-full max-w-4xl mx-auto">
@@ -186,7 +217,7 @@ function JobInputForm({ onJobAnalyzed }: JobInputFormProps) {
 
           <div className="space-y-4">
             <div>
-              <Label htmlFor="cvUpload" className="text-sm font-medium">Upload CV/Resume</Label>
+              <Label htmlFor="cvUpload" className="text-sm font-medium">Upload CV/Resume (Optional)</Label>
               <div className="mt-1">
                 <Input
                   id="cvUpload"
@@ -220,21 +251,31 @@ function JobInputForm({ onJobAnalyzed }: JobInputFormProps) {
         </div>
 
         <div>
-          <Label htmlFor="jobDescription" className="text-sm font-medium">Job Description *</Label>
+          <Label htmlFor="jobDescription" className="text-sm font-medium">
+            Job Description *
+            <span className="text-xs text-muted-foreground ml-2">
+              ({jobDescription.length}/50 characters minimum)
+            </span>
+          </Label>
           <Textarea
             id="jobDescription"
-            placeholder="Paste the complete job description here..."
+            placeholder="Paste the complete job description here including responsibilities, requirements, qualifications, and any other relevant details..."
             value={jobDescription}
             onChange={(e) => setJobDescription(e.target.value)}
             disabled={isAnalyzing}
             rows={8}
-            className="mt-1"
+            className={`mt-1 ${jobDescription.length > 0 && jobDescription.length < 50 ? 'border-orange-300 focus:border-orange-500' : ''}`}
           />
+          {jobDescription.length > 0 && jobDescription.length < 50 && (
+            <p className="text-sm text-orange-600 mt-1">
+              Please provide a more detailed job description (at least 50 characters)
+            </p>
+          )}
         </div>
 
         <Button 
           onClick={analyzeJobPost}
-          disabled={isAnalyzing || !jobDescription.trim()}
+          disabled={isAnalyzing || !isFormValid}
           size="lg"
           className="w-full"
         >
@@ -250,6 +291,12 @@ function JobInputForm({ onJobAnalyzed }: JobInputFormProps) {
             </>
           )}
         </Button>
+        
+        {!isFormValid && jobDescription.length > 0 && (
+          <p className="text-sm text-muted-foreground text-center">
+            Please provide a complete job description to enable analysis
+          </p>
+        )}
       </CardContent>
     </Card>
   )
