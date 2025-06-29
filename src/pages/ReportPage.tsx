@@ -29,7 +29,8 @@ import {
   Lightbulb,
   Star,
   BarChart3,
-  RefreshCw
+  RefreshCw,
+  ArrowLeft
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
@@ -695,6 +696,12 @@ export function ReportPage() {
                   <span>Try Again</span>
                 </Button>
               )}
+              <Button variant="outline" asChild>
+                <Link to="/?tab=past-interviews">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back to Reports
+                </Link>
+              </Button>
               <Button asChild>
                 <Link to="/">
                   <Home className="mr-2 h-4 w-4" />
@@ -723,10 +730,18 @@ export function ReportPage() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <Badge variant="outline" className="flex items-center space-x-1">
-              <FileText className="h-3 w-3" />
-              <span>Report ID: {id}</span>
-            </Badge>
+            <div className="flex items-center space-x-4">
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/?tab=past-interviews">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Reports
+                </Link>
+              </Button>
+              <Badge variant="outline" className="flex items-center space-x-1">
+                <FileText className="h-3 w-3" />
+                <span>Report ID: {id}</span>
+              </Badge>
+            </div>
             <div className="flex items-center space-x-2">
               <Button variant="outline" size="sm" className="flex items-center space-x-1">
                 <Download className="h-4 w-4" />

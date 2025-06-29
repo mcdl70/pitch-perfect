@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { LogOut, User, Shield } from 'lucide-react'
+import { LogOut, User, Shield, FileText, Briefcase } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface LayoutProps {
@@ -41,7 +41,7 @@ export function Layout({ children }: LayoutProps) {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2">
             <Shield className="h-6 w-6" />
-            <span className="font-bold text-xl">SecureApp</span>
+            <span className="font-bold text-xl">PitchPerfect</span>
           </Link>
 
           <nav className="hidden md:flex items-center space-x-6">
@@ -52,12 +52,20 @@ export function Layout({ children }: LayoutProps) {
               Home
             </Link>
             {user && (
-              <Link 
-                to="/interview" 
-                className="text-sm font-medium transition-colors hover:text-primary"
-              >
-                Interview
-              </Link>
+              <>
+                <Link 
+                  to="/interview" 
+                  className="text-sm font-medium transition-colors hover:text-primary"
+                >
+                  Interview
+                </Link>
+                <Link 
+                  to="/?tab=past-interviews" 
+                  className="text-sm font-medium transition-colors hover:text-primary"
+                >
+                  Reports
+                </Link>
+              </>
             )}
           </nav>
 
@@ -85,8 +93,14 @@ export function Layout({ children }: LayoutProps) {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <Link to="/interview" className="cursor-pointer">
-                      <User className="mr-2 h-4 w-4" />
-                      Interview
+                      <Briefcase className="mr-2 h-4 w-4" />
+                      New Interview
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/?tab=past-interviews" className="cursor-pointer">
+                      <FileText className="mr-2 h-4 w-4" />
+                      Past Reports
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />

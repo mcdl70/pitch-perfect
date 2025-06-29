@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
@@ -8,6 +8,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { 
   Shield, 
   Users, 
@@ -20,12 +22,27 @@ import {
   Sparkles,
   Target,
   Brain,
-  AlertTriangle
+  AlertTriangle,
+  FileText,
+  Calendar,
+  Clock,
+  TrendingUp,
+  Eye,
+  RefreshCw
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { supabase } from '@/lib/supabase'
 
 interface JobInputFormProps {
   onJobAnalyzed: (analysis: any) => void
+}
+
+interface InterviewRecord {
+  id: string
+  created_at: string
+  job_details: any
+  overall_score: number
+  report_data: any
 }
 
 function JobInputForm({ onJobAnalyzed }: JobInputFormProps) {
@@ -302,6 +319,208 @@ function JobInputForm({ onJobAnalyzed }: JobInputFormProps) {
   )
 }
 
+function PastInterviews() {
+  const [interviews, setInterviews] = useState<InterviewRecord[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const { user } = useAuth()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if (user) {
+      fetchInterviews()
+    }
+  }, [user])
+
+  const fetchInterviews = async () => {
+    if (!user) return
+
+    setLoading(true)
+    setError('')
+
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('interviews')
+        .select('id, created_at, job_details, overall_score, report_data')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(20)
+
+      if (fetchError) {
+        throw new Error('Failed to load interview history')
+      }
+
+      setInterviews(data || [])
+    } catch (err) {
+      console.error('Error fetching interviews:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load interview history')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const getScoreColor = (score: number) => {
+    if (score >= 8) return 'text-green-600 bg-green-50 border-green-200'
+    if (score >= 6) return 'text-yellow-600 bg-yellow-50 border-yellow-200'
+    return 'text-red-600 bg-red-50 border-red-200'
+  }
+
+  const getJobTitle = (jobDetails: any) => {
+    if (jobDetails?.title) return jobDetails.title
+    if (jobDetails?.keySkills?.length > 0) {
+      return `${jobDetails.keySkills[0]} Position`
+    }
+    return 'Interview Session'
+  }
+
+  const getCompanyName = (jobDetails: any) => {
+    if (jobDetails?.company) return jobDetails.company
+    if (jobDetails?.companyInfo) {
+      // Extract company name from company info if possible
+      const match = jobDetails.companyInfo.match(/^([^.]+)/)
+      if (match) return match[1].trim()
+    }
+    return 'Company'
+  }
+
+  if (loading) {
+    return (
+      <Card className="w-full max-w-4xl mx-auto">
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+              <p className="text-muted-foreground">Loading your interview history...</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (error) {
+    return (
+      <Card className="w-full max-w-4xl mx-auto">
+        <CardContent className="pt-6">
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription className="flex items-center justify-between">
+              <span>{error}</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchInterviews}
+                className="ml-2"
+              >
+                <RefreshCw className="h-4 w-4 mr-1" />
+                Retry
+              </Button>
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (interviews.length === 0) {
+    return (
+      <Card className="w-full max-w-4xl mx-auto">
+        <CardContent className="pt-6">
+          <div className="text-center py-12">
+            <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+              <FileText className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">No Interview History</h3>
+            <p className="text-muted-foreground mb-4">
+              You haven't completed any interviews yet. Start your first interview to see your reports here.
+            </p>
+            <Button variant="outline" onClick={() => navigate('/')}>
+              <Sparkles className="mr-2 h-4 w-4" />
+              Start Your First Interview
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <div className="w-full max-w-4xl mx-auto space-y-6">
+      <div className="text-center mb-8">
+        <h2 className="text-2xl font-bold mb-2">Your Interview History</h2>
+        <p className="text-muted-foreground">
+          Review your past interview performances and track your progress
+        </p>
+      </div>
+
+      <ScrollArea className="h-[600px]">
+        <div className="space-y-4 pr-4">
+          {interviews.map((interview) => (
+            <Card key={interview.id} className="hover:shadow-md transition-shadow cursor-pointer">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3 mb-2">
+                      <h3 className="font-semibold text-lg">
+                        {getJobTitle(interview.job_details)}
+                      </h3>
+                      {interview.overall_score && (
+                        <Badge className={`${getScoreColor(interview.overall_score)} border`}>
+                          {interview.overall_score.toFixed(1)}/10
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    <p className="text-muted-foreground mb-3">
+                      {getCompanyName(interview.job_details)}
+                    </p>
+                    
+                    <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                      <div className="flex items-center space-x-1">
+                        <Calendar className="h-4 w-4" />
+                        <span>{new Date(interview.created_at).toLocaleDateString()}</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Clock className="h-4 w-4" />
+                        <span>{new Date(interview.created_at).toLocaleTimeString()}</span>
+                      </div>
+                      {interview.report_data?.hiringRecommendation && (
+                        <div className="flex items-center space-x-1">
+                          <TrendingUp className="h-4 w-4" />
+                          <span className="capitalize">
+                            {interview.report_data.hiringRecommendation.replace('_', ' ')}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate(`/report/${interview.id}`)}
+                    className="ml-4"
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    View Report
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </ScrollArea>
+
+      <div className="text-center">
+        <Button variant="outline" onClick={fetchInterviews}>
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Refresh
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 export function HomePage() {
   const { user } = useAuth()
 
@@ -361,10 +580,23 @@ export function HomePage() {
         </div>
       )}
 
-      {/* Job Input Form */}
+      {/* Main Content Tabs */}
       {user ? (
         <div className="mb-16">
-          <JobInputForm onJobAnalyzed={handleJobAnalyzed} />
+          <Tabs defaultValue="new-interview" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto mb-8">
+              <TabsTrigger value="new-interview">New Interview</TabsTrigger>
+              <TabsTrigger value="past-interviews">Past Interviews</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="new-interview">
+              <JobInputForm onJobAnalyzed={handleJobAnalyzed} />
+            </TabsContent>
+            
+            <TabsContent value="past-interviews">
+              <PastInterviews />
+            </TabsContent>
+          </Tabs>
         </div>
       ) : (
         <div className="max-w-2xl mx-auto mb-16 text-center">
@@ -377,7 +609,7 @@ export function HomePage() {
                 <div>
                   <h3 className="text-lg font-semibold mb-2">Sign in to get started</h3>
                   <p className="text-muted-foreground mb-4">
-                    Create an account to access personalized interview preparation
+                    Create an account to access personalized interview preparation and track your progress
                   </p>
                   <div className="flex flex-col sm:flex-row gap-3 justify-center">
                     <Button asChild>
@@ -415,7 +647,7 @@ export function HomePage() {
       <div className="text-center">
         <h2 className="text-2xl font-bold mb-8">Powered by Advanced AI Technology</h2>
         <div className="flex flex-wrap justify-center gap-3">
-          {['OpenAI GPT-4', 'React', 'TypeScript', 'Supabase', 'Tailwind CSS', 'shadcn/ui'].map((tech) => (
+          {['OpenAI GPT-4o', 'React', 'TypeScript', 'Supabase', 'Tailwind CSS', 'shadcn/ui'].map((tech) => (
             <Badge key={tech} variant="secondary" className="px-4 py-2 text-sm">
               {tech}
             </Badge>
