@@ -218,7 +218,7 @@ Please provide the next interview question as a JSON response. Consider the conv
           stage: interviewStage,
           questionCount: conversationHistory.filter(h => h.role === 'interviewer').length + 1,
           timestamp: new Date().toISOString(),
-          model: 'gpt-4'
+          model: 'gpt-4o'
         }
       }),
       {
