@@ -157,16 +157,10 @@ export function ChatInput({
           chunkSizes: chunks.map(c => c.size)
         })
         
-        // Check minimum requirements
+        // Check minimum requirements - only check blob size, not timer-based duration
         if (audioBlob.size < 1024) {
           console.error('🎙️ [RECORDING] Audio blob too small:', audioBlob.size, 'bytes')
           setRecordingError('Recording too short or empty. Please record for at least 2 seconds.')
-          return
-        }
-        
-        if (recordingTime < 1) {
-          console.error('🎙️ [RECORDING] Recording time too short:', recordingTime, 'seconds')
-          setRecordingError('Recording too short. Please record for at least 2 seconds.')
           return
         }
         
