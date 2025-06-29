@@ -178,9 +178,9 @@ function JobInputForm({ onJobAnalyzed }: JobInputFormProps) {
   const isFormValid = jobDescription.trim().length >= 50
 
   return (
-    <Card variant="feature" className="w-full max-w-4xl mx-auto">
+    <Card className="w-full max-w-4xl mx-auto shadow-medium">
       <CardHeader className="text-center">
-        <div className="mx-auto w-16 h-16 bg-gradient-to-br from-primary to-accent-blue rounded-2xl flex items-center justify-center mb-4">
+        <div className="mx-auto w-16 h-16 bg-gradient-to-br from-primary to-accent-blue rounded-2xl flex items-center justify-center mb-4 icon-geometric">
           <Briefcase className="h-8 w-8 text-white" />
         </div>
         <CardTitle className="text-h1">Start Your Interview Preparation</CardTitle>
@@ -385,7 +385,7 @@ function PastInterviews() {
 
   if (loading) {
     return (
-      <Card variant="feature" className="w-full max-w-4xl mx-auto">
+      <Card className="w-full max-w-4xl mx-auto shadow-medium">
         <CardContent className="pt-6">
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
@@ -400,7 +400,7 @@ function PastInterviews() {
 
   if (error) {
     return (
-      <Card variant="feature" className="w-full max-w-4xl mx-auto">
+      <Card className="w-full max-w-4xl mx-auto shadow-medium">
         <CardContent className="pt-6">
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
@@ -424,7 +424,7 @@ function PastInterviews() {
 
   if (interviews.length === 0) {
     return (
-      <Card variant="feature" className="w-full max-w-4xl mx-auto">
+      <Card className="w-full max-w-4xl mx-auto shadow-medium">
         <CardContent className="pt-6">
           <div className="text-center py-12">
             <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
@@ -456,7 +456,7 @@ function PastInterviews() {
       <ScrollArea className="h-[600px]">
         <div className="space-y-4 pr-4">
           {interviews.map((interview) => (
-            <Card key={interview.id} variant="pricing">
+            <Card key={interview.id} className="hover:shadow-lift transition-shadow cursor-pointer pricing-card">
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
@@ -549,30 +549,51 @@ export function HomePage() {
   return (
     <div className="container mx-auto px-4 py-80px max-w-container">
       {/* Hero Section */}
-      <div className="text-left mb-16 max-w-[50%]">
-        <Badge variant="outline" className="mb-4 bg-primary-light border-primary/20">
-          <Sparkles className="h-3 w-3 mr-1" />
-          AI-Powered Interview Prep
-        </Badge>
-        <h1 className="text-hero tracking-tight mb-6">
-          Master Your Next
-          <span className="block bg-gradient-to-r from-primary to-accent-blue bg-clip-text text-transparent">
-            Job Interview
-          </span>
-        </h1>
-        <p className="text-body-large text-muted-foreground max-w-3xl mb-8">
-          PitchPerfect uses advanced AI to analyze job postings, create personalized interview 
-          simulations, and provide detailed feedback to help you land your dream job.
-        </p>
+      <div className="grid lg:grid-cols-2 gap-12 items-center mb-16">
+        {/* Left side - Text content */}
+        <div>
+          <Badge variant="outline" className="mb-4 bg-primary-light border-primary/20">
+            <Sparkles className="h-3 w-3 mr-1" />
+            AI-Powered Interview Prep
+          </Badge>
+          <h1 className="text-hero tracking-tight mb-6">
+            Master Your Next
+            <span className="block bg-gradient-to-r from-primary to-accent-blue bg-clip-text text-transparent">
+              Job Interview
+            </span>
+          </h1>
+          <p className="text-body-large text-muted-foreground mb-8">
+            PitchPerfect uses advanced AI to analyze job postings, create personalized interview 
+            simulations, and provide detailed feedback to help you land your dream job.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button size="lg" asChild>
+              <Link to={user ? "#new-interview" : "/signup"}>
+                Get Started <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+            <Button variant="outline" size="lg" asChild>
+              <Link to="/login">Sign In</Link>
+            </Button>
+          </div>
+        </div>
+
+        {/* Right side - Visual placeholder */}
+        <div className="hero-visual h-96 flex items-center justify-center">
+          <div className="text-center text-muted-foreground">
+            <div className="text-sm font-medium mb-2">Interview Dashboard Preview</div>
+            <div className="text-xs">Coming Soon</div>
+          </div>
+        </div>
       </div>
 
       {/* User Status */}
       {user && (
         <div className="max-w-md mx-auto mb-12">
-          <Card className="border-green-200 bg-green-50/50">
+          <Card className="border-primary/20 bg-primary-light">
             <CardContent className="pt-6">
               <div className="flex items-center space-x-2">
-                <CheckCircle className="h-5 w-5 text-green-600" />
+                <CheckCircle className="h-5 w-5 text-primary" />
                 <span className="text-caption font-medium">Welcome back, {user.email}</span>
               </div>
             </CardContent>
@@ -582,7 +603,7 @@ export function HomePage() {
 
       {/* Main Content Tabs */}
       {user ? (
-        <div className="mb-16">
+        <div className="mb-16" id="new-interview">
           <Tabs defaultValue="new-interview" className="w-full">
             <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto mb-8">
               <TabsTrigger value="new-interview">New Interview</TabsTrigger>
@@ -600,7 +621,7 @@ export function HomePage() {
         </div>
       ) : (
         <div className="max-w-2xl mx-auto mb-16 text-center">
-          <Card className="border-2 border-dashed border-muted-foreground/25">
+          <Card className="border-2 border-dashed border-muted-foreground/25 shadow-medium">
             <CardContent className="pt-8 pb-8">
               <div className="space-y-4">
                 <div className="mx-auto w-12 h-12 bg-muted rounded-full flex items-center justify-center">
@@ -629,20 +650,28 @@ export function HomePage() {
       )}
 
       {/* Features Grid with Gradient Background */}
-      <div className="relative">
+      <div className="relative mb-16">
         <div className="absolute inset-0 bg-gradient-brand rounded-2xl opacity-10"></div>
-        <div className="relative grid md:grid-cols-3 gap-8 mb-16 p-80px">
-          {features.map((feature, index) => (
-            <Card key={index} variant="feature" className="text-center hover:shadow-lift transition-shadow">
-              <CardHeader>
-                <div className="mx-auto w-12 h-12 bg-gradient-to-br from-primary/10 to-accent-blue/10 rounded-lg flex items-center justify-center mb-4">
-                  <feature.icon className="h-6 w-6 text-primary" />
-                </div>
-                <CardTitle className="text-xl">{feature.title}</CardTitle>
-                <CardDescription className="text-base">{feature.description}</CardDescription>
-              </CardHeader>
-            </Card>
-          ))}
+        <div className="relative p-80px">
+          <div className="text-center mb-12">
+            <h2 className="text-h1 mb-4">Why Choose PitchPerfect?</h2>
+            <p className="text-body-large text-muted-foreground">
+              Advanced AI technology meets personalized interview preparation
+            </p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8">
+            {features.map((feature, index) => (
+              <Card key={index} className={`text-center hover:shadow-lift transition-shadow pricing-card ${index < features.length - 1 ? 'feature-separator relative' : ''}`}>
+                <CardHeader>
+                  <div className="mx-auto w-12 h-12 icon-geometric rounded-lg flex items-center justify-center mb-4">
+                    <feature.icon className="h-6 w-6 text-primary" />
+                  </div>
+                  <CardTitle className="text-xl">{feature.title}</CardTitle>
+                  <CardDescription className="text-base">{feature.description}</CardDescription>
+                </CardHeader>
+              </Card>
+            ))}
+          </div>
         </div>
       </div>
 

@@ -117,8 +117,8 @@ export function Layout({ children }: LayoutProps) {
               </DropdownMenu>
             ) : (
               <div className="flex items-center space-x-2">
-                <Button variant="outline" asChild>
-                  <Link to="/login">Login</Link>
+                <Button asChild>
+                  <Link to="/login">Sign In</Link>
                 </Button>
                 <Button asChild>
                   <Link to="/signup">Sign Up</Link>
