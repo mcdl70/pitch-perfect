@@ -49,6 +49,20 @@ serve(async (req) => {
       )
     }
 
+    // Validate job description length and content
+    if (jobDescription.trim().length < 50) {
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'Job description must be at least 50 characters long. Please provide a more detailed job description.' 
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
     // System prompt for job post analysis
     const systemPrompt = `You are an expert HR analyst and technical recruiter with deep knowledge across all industries and job functions. Your task is to analyze job postings and extract key information that will be used to generate targeted interview questions.
 
@@ -63,13 +77,29 @@ Analyze the provided job posting and extract the following information:
 7. SALARY RANGE: If mentioned or if you can reasonably estimate based on role/location
 8. WORK ARRANGEMENT: Remote, hybrid, on-site, or flexible
 
-Provide your analysis in a structured JSON format. Be thorough but concise. Focus on actionable insights that would help someone prepare for an interview for this role.
+IMPORTANT GUIDELINES:
+- Provide your analysis in a structured JSON format
+- Be thorough but concise
+- Focus on actionable insights that would help someone prepare for an interview for this role
+- If the job posting is vague or lacks detail, make reasonable inferences based on the job title and industry standards, but note when you're making assumptions
+- Ensure all arrays contain at least 3-5 relevant items
+- Make the analysis comprehensive enough to generate meaningful interview questions
 
-If the job posting is vague or lacks detail, make reasonable inferences based on the job title and industry standards, but note when you're making assumptions.`
+REQUIRED JSON STRUCTURE:
+{
+  "keySkills": ["skill1", "skill2", "skill3", ...],
+  "requiredExperience": ["experience1", "experience2", "experience3", ...],
+  "companyInfo": "detailed company information",
+  "roleResponsibilities": ["responsibility1", "responsibility2", "responsibility3", ...],
+  "interviewFocus": ["focus1", "focus2", "focus3", ...],
+  "difficulty": "entry|mid|senior|executive",
+  "estimatedSalaryRange": "salary range if available",
+  "workArrangement": "work arrangement details"
+}`
 
     // Prepare the API request
     const apiRequest = {
-      model: 'gpt-4',
+      model: 'gpt-4o',
       messages: [
         {
           role: 'system',
@@ -85,11 +115,11 @@ Company: ${companyName || 'Not specified'}
 Job Description:
 ${jobDescription}
 
-Please provide a comprehensive analysis in JSON format.`
+Please provide a comprehensive analysis in JSON format that will be used to create personalized interview questions and preparation materials.`
         }
       ],
       temperature: 0.3,
-      max_tokens: 2000
+      max_tokens: 16000
     }
 
     // Call OpenAI API
@@ -118,10 +148,18 @@ Please provide a comprehensive analysis in JSON format.`
     // Parse the JSON response from OpenAI
     let analysisResult: JobAnalysisResponse
     try {
-      analysisResult = JSON.parse(analysisContent)
+      // Clean the response to extract JSON if it's wrapped in markdown or other text
+      const jsonMatch = analysisContent.match(/\{[\s\S]*\}/)
+      const jsonString = jsonMatch ? jsonMatch[0] : analysisContent
+      analysisResult = JSON.parse(jsonString)
     } catch (parseError) {
       console.error('Failed to parse OpenAI response as JSON:', analysisContent)
-      throw new Error('Invalid JSON response from analysis')
+      throw new Error('Invalid JSON response from analysis. The job description may be too short or unclear.')
+    }
+
+    // Validate the analysis result
+    if (!analysisResult.keySkills || !Array.isArray(analysisResult.keySkills) || analysisResult.keySkills.length === 0) {
+      throw new Error('Analysis incomplete. Please provide a more detailed job description.')
     }
 
     return new Response(
@@ -130,7 +168,8 @@ Please provide a comprehensive analysis in JSON format.`
         analysis: analysisResult,
         metadata: {
           analyzedAt: new Date().toISOString(),
-          model: 'gpt-4'
+          model: 'gpt-4o',
+          inputLength: jobDescription.length
         }
       }),
       {

@@ -164,16 +164,71 @@ HIRING RECOMMENDATIONS:
 - NO_HIRE: Does not meet requirements, pass
 - STRONG_NO_HIRE: Significant concerns, definitely pass
 
-Your response must be a comprehensive JSON object with detailed analysis and specific feedback for each area assessed.`
+CRITICAL REQUIREMENTS:
+- Your response must be a comprehensive JSON object with detailed analysis
+- Provide specific feedback for each area assessed
+- Include question-by-question breakdown in detailedFeedback array
+- Ensure all scores are realistic and well-justified
+- Make recommendations actionable and specific
 
-    // Build conversation summary
+REQUIRED JSON STRUCTURE:
+{
+  "overallScore": number,
+  "overallAssessment": "string",
+  "strengths": ["strength1", "strength2", ...],
+  "areasForImprovement": ["area1", "area2", ...],
+  "technicalSkillsAssessment": {
+    "score": number,
+    "details": "string",
+    "specificSkills": [{"skill": "string", "rating": number, "feedback": "string"}, ...]
+  },
+  "behavioralSkillsAssessment": {
+    "score": number,
+    "details": "string",
+    "traits": [{"trait": "string", "rating": number, "feedback": "string"}, ...]
+  },
+  "communicationSkills": {
+    "score": number,
+    "clarity": number,
+    "structure": number,
+    "engagement": number,
+    "feedback": "string"
+  },
+  "problemSolvingApproach": {
+    "score": number,
+    "methodology": "string",
+    "creativity": number,
+    "analyticalThinking": number,
+    "feedback": "string"
+  },
+  "culturalFit": {
+    "score": number,
+    "alignment": "string",
+    "feedback": "string"
+  },
+  "recommendedNextSteps": ["step1", "step2", ...],
+  "hiringRecommendation": "strong_hire|hire|no_hire|strong_no_hire",
+  "confidenceLevel": number,
+  "detailedFeedback": [
+    {
+      "question": "string",
+      "candidateResponse": "string",
+      "evaluation": "string",
+      "score": number,
+      "suggestions": ["suggestion1", "suggestion2", ...]
+    }, ...
+  ]
+}`
+
+    // Build conversation summary with better formatting
     const conversationSummary = conversationHistory.map((entry, index) => {
-      return `${index + 1}. ${entry.role.toUpperCase()}: ${entry.content}`
+      const timestamp = new Date(entry.timestamp).toLocaleTimeString()
+      return `[${timestamp}] ${entry.role.toUpperCase()}: ${entry.content}`
     }).join('\n\n')
 
-    // Prepare the API request
+    // Prepare the API request with increased context window
     const apiRequest = {
-      model: 'gpt-4',
+      model: 'gpt-4o',
       messages: [
         {
           role: 'system',
@@ -182,25 +237,38 @@ Your response must be a comprehensive JSON object with detailed analysis and spe
         {
           role: 'user',
           content: `POSITION REQUIREMENTS:
-Key Skills: ${jobAnalysis.keySkills.join(', ')}
-Required Experience: ${jobAnalysis.requiredExperience.join(', ')}
-Company Context: ${jobAnalysis.companyInfo}
-Role Responsibilities: ${jobAnalysis.roleResponsibilities.join(', ')}
-Focus Areas: ${jobAnalysis.interviewFocus.join(', ')}
-Position Level: ${jobAnalysis.difficulty}
+Key Skills: ${jobAnalysis.keySkills?.join(', ') || 'Not specified'}
+Required Experience: ${jobAnalysis.requiredExperience?.join(', ') || 'Not specified'}
+Company Context: ${jobAnalysis.companyInfo || 'Not specified'}
+Role Responsibilities: ${jobAnalysis.roleResponsibilities?.join(', ') || 'Not specified'}
+Focus Areas: ${jobAnalysis.interviewFocus?.join(', ') || 'General assessment'}
+Position Level: ${jobAnalysis.difficulty || 'mid-level'}
 
 INTERVIEW DETAILS:
 Duration: ${interviewDuration} minutes
 Total Exchanges: ${conversationHistory.length}
+Interview Date: ${new Date().toLocaleDateString()}
 
 COMPLETE INTERVIEW TRANSCRIPT:
 ${conversationSummary}
 
-Please provide a comprehensive feedback report in JSON format. Analyze the candidate's performance across all dimensions, provide specific examples from their responses, and give actionable feedback for improvement. Be thorough, fair, and constructive in your assessment.`
+EVALUATION INSTRUCTIONS:
+Please provide a comprehensive feedback report in JSON format. Analyze the candidate's performance across all dimensions, provide specific examples from their responses, and give actionable feedback for improvement. Be thorough, fair, and constructive in your assessment.
+
+Focus on:
+1. How well the candidate answered each question
+2. Their communication style and clarity
+3. Technical competency demonstrated
+4. Behavioral indicators and soft skills
+5. Cultural fit and enthusiasm
+6. Areas where they excelled and areas needing improvement
+7. Specific, actionable recommendations for growth
+
+Ensure your evaluation is evidence-based and references specific parts of the interview transcript.`
         }
       ],
       temperature: 0.2,
-      max_tokens: 4000
+      max_tokens: 16000
     }
 
     // Call OpenAI API
@@ -229,10 +297,18 @@ Please provide a comprehensive feedback report in JSON format. Analyze the candi
     // Parse the JSON response from OpenAI
     let feedbackResult: FeedbackReport
     try {
-      feedbackResult = JSON.parse(feedbackContent)
+      // Clean the response to extract JSON if it's wrapped in markdown or other text
+      const jsonMatch = feedbackContent.match(/\{[\s\S]*\}/)
+      const jsonString = jsonMatch ? jsonMatch[0] : feedbackContent
+      feedbackResult = JSON.parse(jsonString)
     } catch (parseError) {
       console.error('Failed to parse OpenAI response as JSON:', feedbackContent)
       throw new Error('Invalid JSON response from feedback generator')
+    }
+
+    // Validate the feedback result
+    if (!feedbackResult.overallScore || !feedbackResult.overallAssessment) {
+      throw new Error('Incomplete feedback report generated')
     }
 
     return new Response(
@@ -243,7 +319,8 @@ Please provide a comprehensive feedback report in JSON format. Analyze the candi
           generatedAt: new Date().toISOString(),
           interviewDuration,
           totalExchanges: conversationHistory.length,
-          model: 'gpt-4'
+          model: 'gpt-4o',
+          contextLength: conversationSummary.length
         }
       }),
       {
