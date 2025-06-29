@@ -44,6 +44,25 @@ export function ChatInput({
     }
   }
 
+  const getSupportedMimeType = () => {
+    // Try different MIME types in order of preference
+    const types = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/mp4',
+      'audio/wav'
+    ]
+    
+    for (const type of types) {
+      if (MediaRecorder.isTypeSupported(type)) {
+        return type
+      }
+    }
+    
+    // Fallback to default
+    return 'audio/webm'
+  }
+
   const startRecording = async () => {
     setRecordingError('')
     
@@ -53,18 +72,25 @@ export function ChatInput({
         throw new Error('Audio recording is not supported in this browser')
       }
 
-      // Request microphone access
+      // Request microphone access with specific constraints
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
-          sampleRate: 44100,
+          autoGainControl: true,
+          sampleRate: 16000, // Lower sample rate for better compatibility
+          channelCount: 1, // Mono audio
         } 
       })
 
+      // Get supported MIME type
+      const mimeType = getSupportedMimeType()
+      console.log('Using MIME type:', mimeType)
+
       // Create MediaRecorder instance
       const recorder = new MediaRecorder(stream, {
-        mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4'
+        mimeType: mimeType,
+        audioBitsPerSecond: 128000 // Set bit rate for consistent quality
       })
 
       const chunks: Blob[] = []
@@ -79,13 +105,31 @@ export function ChatInput({
         // Stop all tracks to release microphone
         stream.getTracks().forEach(track => track.stop())
         
-        // Create audio blob
+        // Check if we have enough data
+        if (chunks.length === 0) {
+          setRecordingError('No audio data recorded. Please try again.')
+          return
+        }
+        
+        // Create audio blob with explicit type
         const audioBlob = new Blob(chunks, { 
-          type: recorder.mimeType || 'audio/webm' 
+          type: mimeType
+        })
+        
+        // Check minimum file size (at least 1KB)
+        if (audioBlob.size < 1024) {
+          setRecordingError('Recording too short. Please record for at least 1 second.')
+          return
+        }
+        
+        console.log('Audio blob created:', {
+          size: audioBlob.size,
+          type: audioBlob.type,
+          duration: recordingTime
         })
         
         // Transcribe the audio
-        await transcribeAudio(audioBlob)
+        await transcribeAudio(audioBlob, mimeType)
         
         // Reset state
         setAudioChunks([])
@@ -99,7 +143,7 @@ export function ChatInput({
       }
 
       // Start recording
-      recorder.start(1000) // Collect data every second
+      recorder.start(250) // Collect data every 250ms for better quality
       setMediaRecorder(recorder)
       setIsRecording(true)
       setAudioChunks(chunks)
@@ -148,14 +192,41 @@ export function ChatInput({
     toast.success('Recording stopped')
   }
 
-  const transcribeAudio = async (audioBlob: Blob) => {
+  const transcribeAudio = async (audioBlob: Blob, originalMimeType: string) => {
     setIsTranscribing(true)
     setRecordingError('')
 
     try {
-      // Create FormData
+      // Convert to a more compatible format if needed
+      let finalBlob = audioBlob
+      let filename = 'recording.webm'
+      
+      // Determine file extension based on MIME type
+      if (originalMimeType.includes('mp4')) {
+        filename = 'recording.mp4'
+      } else if (originalMimeType.includes('wav')) {
+        filename = 'recording.wav'
+      } else if (originalMimeType.includes('webm')) {
+        filename = 'recording.webm'
+      }
+
+      console.log('Preparing to transcribe:', {
+        size: finalBlob.size,
+        type: finalBlob.type,
+        filename: filename
+      })
+
+      // Create FormData with proper file structure
       const formData = new FormData()
-      formData.append('audio', audioBlob, 'recording.webm')
+      
+      // Create a proper File object instead of just appending the blob
+      const audioFile = new File([finalBlob], filename, {
+        type: finalBlob.type || 'audio/webm'
+      })
+      
+      formData.append('audio', audioFile)
+
+      console.log('Sending transcription request...')
 
       // Send to transcription endpoint
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transcribe-audio`, {
@@ -166,11 +237,26 @@ export function ChatInput({
         body: formData
       })
 
+      console.log('Transcription response status:', response.status)
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        const errorText = await response.text()
+        console.error('Transcription error response:', errorText)
+        
+        let errorMessage = 'Failed to transcribe audio'
+        if (response.status === 400) {
+          errorMessage = 'Invalid audio format or file. Please try recording again.'
+        } else if (response.status === 413) {
+          errorMessage = 'Audio file too large. Please record a shorter message.'
+        } else if (response.status === 429) {
+          errorMessage = 'Too many requests. Please wait a moment and try again.'
+        }
+        
+        throw new Error(errorMessage)
       }
 
       const data = await response.json()
+      console.log('Transcription response:', data)
 
       if (!data.success) {
         throw new Error(data.error || 'Failed to transcribe audio')
@@ -192,14 +278,16 @@ export function ChatInput({
       
       let errorMessage = 'Failed to transcribe audio. Please try again.'
       if (error instanceof Error) {
-        if (error.message.includes('fetch')) {
+        if (error.message.includes('fetch') || error.message.includes('network')) {
           errorMessage = 'Network error. Please check your connection and try again.'
-        } else if (error.message.includes('413')) {
-          errorMessage = 'Audio file too large. Please record a shorter message.'
-        } else if (error.message.includes('429')) {
+        } else if (error.message.includes('format') || error.message.includes('Invalid audio')) {
+          errorMessage = 'Audio format not supported. Please try recording again.'
+        } else if (error.message.includes('large')) {
+          errorMessage = 'Recording too long. Please record a shorter message.'
+        } else if (error.message.includes('requests')) {
           errorMessage = 'Too many requests. Please wait a moment and try again.'
-        } else if (error.message.includes('format')) {
-          errorMessage = 'Unsupported audio format. Please try recording again.'
+        } else {
+          errorMessage = error.message
         }
       }
       
@@ -216,6 +304,9 @@ export function ChatInput({
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
+  // Prevent recording if it's too short
+  const canStopRecording = recordingTime >= 1
+
   return (
     <div className="space-y-3">
       {/* Recording Error Alert */}
@@ -231,6 +322,9 @@ export function ChatInput({
         <div className="flex items-center justify-center space-x-2 text-sm text-muted-foreground bg-red-50 border border-red-200 rounded-lg p-2">
           <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
           <span>Recording... {formatRecordingTime(recordingTime)}</span>
+          {recordingTime < 1 && (
+            <span className="text-xs text-orange-600">(minimum 1 second)</span>
+          )}
         </div>
       )}
 
@@ -260,10 +354,14 @@ export function ChatInput({
             type="button"
             variant={isRecording ? "destructive" : "outline"}
             size="sm"
-            onClick={isRecording ? stopRecording : startRecording}
-            disabled={disabled || isLoading || isTranscribing}
+            onClick={isRecording ? (canStopRecording ? stopRecording : undefined) : startRecording}
+            disabled={disabled || isLoading || isTranscribing || (isRecording && !canStopRecording)}
             className="self-end"
-            title={isRecording ? "Stop recording" : "Start voice recording"}
+            title={
+              isRecording 
+                ? (canStopRecording ? "Stop recording" : "Recording... (minimum 1 second)")
+                : "Start voice recording"
+            }
           >
             {isRecording ? (
               <Square className="h-4 w-4" />
