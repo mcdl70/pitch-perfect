@@ -336,7 +336,7 @@ export function ReportsPage() {
                     <SelectItem value="all">All Scores</SelectItem>
                     <SelectItem value="excellent">Excellent (8-10)</SelectItem>
                     <SelectItem value="good">Good (6-7.9)</SelectItem>
-                    <SelectItem value="needs_improvement">Needs Improvement (<6)</SelectItem>
+                    <SelectItem value="needs_improvement">Needs Improvement (&lt;6)</SelectItem>
                   </SelectContent>
                 </Select>
 
