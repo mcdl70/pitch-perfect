@@ -290,9 +290,10 @@ interface ChatInterfaceProps {
   jobAnalysis: any
   config: InterviewConfig
   onInterviewComplete: (data: any) => void
+  interviewId?: string
 }
 
-function ChatInterface({ jobAnalysis, config, onInterviewComplete }: ChatInterfaceProps) {
+function ChatInterface({ jobAnalysis, config, onInterviewComplete, interviewId }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [currentMessage, setCurrentMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -625,29 +626,54 @@ function ChatInterface({ jobAnalysis, config, onInterviewComplete }: ChatInterfa
       }
       
       if (feedbackData.report) {
-        // Save interview to database
-        const { data: interviewRecord, error } = await supabase
-          .from('interviews')
-          .insert({
-            user_id: user?.id,
-            job_details: jobAnalysis,
-            transcript: { messages, config },
-            report_data: feedbackData.report,
-            overall_score: feedbackData.report.overallScore
+        // Update existing interview record or create new one
+        if (interviewId) {
+          // Update existing record
+          const { error } = await supabase
+            .from('interviews')
+            .update({
+              transcript: { messages, config },
+              report_data: feedbackData.report,
+              overall_score: feedbackData.report.overallScore
+            })
+            .eq('id', interviewId)
+            .eq('user_id', user?.id)
+
+          if (error) {
+            console.error('Error updating interview:', error)
+            toast.error('Failed to save interview results')
+          }
+
+          onInterviewComplete({
+            interviewId: interviewId,
+            report: feedbackData.report,
+            duration: interviewDuration
           })
-          .select()
-          .single()
+        } else {
+          // Create new record (fallback)
+          const { data: interviewRecord, error } = await supabase
+            .from('interviews')
+            .insert({
+              user_id: user?.id,
+              job_details: jobAnalysis,
+              transcript: { messages, config },
+              report_data: feedbackData.report,
+              overall_score: feedbackData.report.overallScore
+            })
+            .select()
+            .single()
 
-        if (error) {
-          console.error('Error saving interview:', error)
-          toast.error('Failed to save interview results')
+          if (error) {
+            console.error('Error saving interview:', error)
+            toast.error('Failed to save interview results')
+          }
+
+          onInterviewComplete({
+            interviewId: interviewRecord?.id,
+            report: feedbackData.report,
+            duration: interviewDuration
+          })
         }
-
-        onInterviewComplete({
-          interviewId: interviewRecord?.id,
-          report: feedbackData.report,
-          duration: interviewDuration
-        })
       }
     } catch (error) {
       console.error('Error completing interview:', error)
@@ -655,7 +681,7 @@ function ChatInterface({ jobAnalysis, config, onInterviewComplete }: ChatInterfa
       
       // Still navigate to report page with basic data
       onInterviewComplete({
-        interviewId: null,
+        interviewId: interviewId || null,
         report: null,
         duration: interviewDuration,
         error: 'Failed to generate complete report'
@@ -852,15 +878,18 @@ export function InterviewPage() {
   const location = useLocation()
   const navigate = useNavigate()
 
-  const jobAnalysis = location.state?.jobAnalysis
-  const jobDetails = location.state?.jobDetails
+  // Get data from navigation state
+  const interviewId = location.state?.interviewId
+  const fullJobDetails = location.state?.fullJobDetails
+  const jobAnalysis = location.state?.jobAnalysis || fullJobDetails?.analysis
+  const jobDetails = location.state?.jobDetails || fullJobDetails?.raw_input
 
   useEffect(() => {
-    if (!jobAnalysis) {
+    if (!jobAnalysis && !fullJobDetails) {
       toast.error('No job analysis found. Please start from the home page.')
       navigate('/')
     }
-  }, [jobAnalysis, navigate])
+  }, [jobAnalysis, fullJobDetails, navigate])
 
   const handleStartInterview = (config: InterviewConfig) => {
     setInterviewConfig(config)
@@ -873,14 +902,14 @@ export function InterviewPage() {
       state: { 
         report: data.report,
         duration: data.duration,
-        jobAnalysis,
+        jobAnalysis: jobAnalysis || fullJobDetails?.analysis,
         config: interviewConfig,
         error: data.error
       } 
     })
   }
 
-  if (!jobAnalysis) {
+  if (!jobAnalysis && !fullJobDetails) {
     return (
       <div className="container mx-auto px-4 py-12">
         <Alert variant="destructive">
@@ -897,16 +926,17 @@ export function InterviewPage() {
     <div className="container mx-auto px-4 py-8">
       {currentView === 'setup' && (
         <InterviewSetup 
-          jobAnalysis={jobAnalysis}
+          jobAnalysis={jobAnalysis || fullJobDetails?.analysis}
           onStartInterview={handleStartInterview}
         />
       )}
       
       {currentView === 'active' && interviewConfig && (
         <ChatInterface
-          jobAnalysis={jobAnalysis}
+          jobAnalysis={jobAnalysis || fullJobDetails?.analysis}
           config={interviewConfig}
           onInterviewComplete={handleInterviewComplete}
+          interviewId={interviewId}
         />
       )}
     </div>

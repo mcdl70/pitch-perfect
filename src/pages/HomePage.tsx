@@ -28,7 +28,10 @@ import {
   Clock,
   TrendingUp,
   Eye,
-  RefreshCw
+  RefreshCw,
+  Play,
+  Bookmark,
+  BookmarkCheck
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
@@ -41,7 +44,7 @@ interface InterviewRecord {
   id: string
   created_at: string
   job_details: any
-  overall_score: number
+  overall_score: number | null
   report_data: any
 }
 
@@ -55,6 +58,7 @@ function JobInputForm({ onJobAnalyzed }: JobInputFormProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [error, setError] = useState('')
   const navigate = useNavigate()
+  const { user } = useAuth()
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -130,20 +134,60 @@ function JobInputForm({ onJobAnalyzed }: JobInputFormProps) {
         throw new Error('Invalid analysis data received')
       }
 
-      toast.success('Job posting analyzed successfully!')
+      // Prepare job details to save
+      const rawInput = {
+        title: jobTitle.trim() || 'Untitled Position',
+        company: companyName.trim() || 'Company',
+        description: jobDescription.trim(),
+        url: jobUrl.trim() || null,
+        cvFile: cvFile?.name || null,
+        coverLetter: coverLetter.trim() || null
+      }
+
+      const fullJobDetails = {
+        raw_input: rawInput,
+        analysis: data.analysis
+      }
+
+      // Save job configuration to database
+      if (user) {
+        const { data: savedInterview, error: saveError } = await supabase
+          .from('interviews')
+          .insert({
+            user_id: user.id,
+            job_details: fullJobDetails,
+            transcript: null,
+            report_data: null,
+            overall_score: null
+          })
+          .select()
+          .single()
+
+        if (saveError) {
+          console.error('Error saving job configuration:', saveError)
+          toast.error('Failed to save job configuration')
+        } else {
+          toast.success('Job configuration saved successfully!')
+          
+          // Navigate to interview page with saved interview ID and job details
+          navigate('/interview', { 
+            state: { 
+              interviewId: savedInterview.id,
+              fullJobDetails: fullJobDetails,
+              jobAnalysis: data.analysis,
+              jobDetails: rawInput
+            } 
+          })
+          return
+        }
+      }
+
+      // Fallback: navigate without saving (for non-authenticated users)
       onJobAnalyzed(data.analysis)
-      
-      // Navigate to interview page with analysis data
       navigate('/interview', { 
         state: { 
           jobAnalysis: data.analysis,
-          jobDetails: {
-            title: jobTitle.trim() || 'Untitled Position',
-            company: companyName.trim() || 'Company',
-            description: jobDescription.trim(),
-            cvFile: cvFile?.name,
-            coverLetter: coverLetter.trim()
-          }
+          jobDetails: rawInput
         } 
       })
 
@@ -299,7 +343,7 @@ function JobInputForm({ onJobAnalyzed }: JobInputFormProps) {
           {isAnalyzing ? (
             <>
               <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              Analyzing Job Posting...
+              Analyzing & Saving Job...
             </>
           ) : (
             <>
@@ -313,6 +357,15 @@ function JobInputForm({ onJobAnalyzed }: JobInputFormProps) {
           <p className="text-sm text-muted-foreground text-center">
             Please provide a complete job description to enable analysis
           </p>
+        )}
+
+        {user && (
+          <div className="text-center">
+            <p className="text-xs text-muted-foreground">
+              <Bookmark className="h-3 w-3 inline mr-1" />
+              Job configurations are automatically saved for future interviews
+            </p>
+          </div>
         )}
       </CardContent>
     </Card>
@@ -344,7 +397,7 @@ function PastInterviews() {
         .select('id, created_at, job_details, overall_score, report_data')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(20)
+        .limit(50)
 
       if (fetchError) {
         throw new Error('Failed to load interview history')
@@ -366,7 +419,14 @@ function PastInterviews() {
   }
 
   const getJobTitle = (jobDetails: any) => {
+    // New structure: job_details.raw_input.title
+    if (jobDetails?.raw_input?.title) return jobDetails.raw_input.title
+    // Legacy structure: job_details.title
     if (jobDetails?.title) return jobDetails.title
+    // Fallback to analysis data
+    if (jobDetails?.analysis?.keySkills?.length > 0) {
+      return `${jobDetails.analysis.keySkills[0]} Position`
+    }
     if (jobDetails?.keySkills?.length > 0) {
       return `${jobDetails.keySkills[0]} Position`
     }
@@ -374,13 +434,49 @@ function PastInterviews() {
   }
 
   const getCompanyName = (jobDetails: any) => {
+    // New structure: job_details.raw_input.company
+    if (jobDetails?.raw_input?.company) return jobDetails.raw_input.company
+    // Legacy structure: job_details.company
     if (jobDetails?.company) return jobDetails.company
+    // Fallback to analysis data
+    if (jobDetails?.analysis?.companyInfo) {
+      const match = jobDetails.analysis.companyInfo.match(/^([^.]+)/)
+      if (match) return match[1].trim()
+    }
     if (jobDetails?.companyInfo) {
-      // Extract company name from company info if possible
       const match = jobDetails.companyInfo.match(/^([^.]+)/)
       if (match) return match[1].trim()
     }
     return 'Company'
+  }
+
+  const isCompletedInterview = (interview: InterviewRecord) => {
+    return interview.report_data !== null && interview.overall_score !== null
+  }
+
+  const isSavedJobConfig = (interview: InterviewRecord) => {
+    return interview.report_data === null && interview.overall_score === null
+  }
+
+  const startInterviewFromSaved = (interview: InterviewRecord) => {
+    const fullJobDetails = interview.job_details
+    const jobAnalysis = fullJobDetails?.analysis || fullJobDetails
+    const jobDetails = fullJobDetails?.raw_input || {
+      title: getJobTitle(fullJobDetails),
+      company: getCompanyName(fullJobDetails),
+      description: fullJobDetails?.description || 'No description available',
+      cvFile: fullJobDetails?.cvFile || null,
+      coverLetter: fullJobDetails?.coverLetter || null
+    }
+
+    navigate('/interview', { 
+      state: { 
+        interviewId: interview.id,
+        fullJobDetails: fullJobDetails,
+        jobAnalysis: jobAnalysis,
+        jobDetails: jobDetails
+      } 
+    })
   }
 
   if (loading) {
@@ -422,6 +518,9 @@ function PastInterviews() {
     )
   }
 
+  const completedInterviews = interviews.filter(isCompletedInterview)
+  const savedJobConfigs = interviews.filter(isSavedJobConfig)
+
   if (interviews.length === 0) {
     return (
       <Card className="w-full max-w-4xl mx-auto shadow-medium">
@@ -449,65 +548,142 @@ function PastInterviews() {
       <div className="text-center mb-8">
         <h2 className="text-h1 mb-2">Your Interview History</h2>
         <p className="text-muted-foreground">
-          Review your past interview performances and track your progress
+          Review your past interview performances and start new interviews from saved job configurations
         </p>
       </div>
 
       <ScrollArea className="h-[600px]">
-        <div className="space-y-4 pr-4">
-          {interviews.map((interview) => (
-            <Card key={interview.id} className="hover:shadow-lift transition-shadow cursor-pointer pricing-card">
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-2">
-                      <h3 className="font-semibold text-lg">
-                        {getJobTitle(interview.job_details)}
-                      </h3>
-                      {interview.overall_score && (
-                        <Badge className={`${getScoreColor(interview.overall_score)} border`}>
-                          {interview.overall_score.toFixed(1)}/10
-                        </Badge>
-                      )}
-                    </div>
-                    
-                    <p className="text-muted-foreground mb-3">
-                      {getCompanyName(interview.job_details)}
-                    </p>
-                    
-                    <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                      <div className="flex items-center space-x-1">
-                        <Calendar className="h-4 w-4" />
-                        <span>{new Date(interview.created_at).toLocaleDateString()}</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <Clock className="h-4 w-4" />
-                        <span>{new Date(interview.created_at).toLocaleTimeString()}</span>
-                      </div>
-                      {interview.report_data?.hiringRecommendation && (
-                        <div className="flex items-center space-x-1">
-                          <TrendingUp className="h-4 w-4" />
-                          <span className="capitalize">
-                            {interview.report_data.hiringRecommendation.replace('_', ' ')}
-                          </span>
+        <div className="space-y-6 pr-4">
+          {/* Saved Job Configurations */}
+          {savedJobConfigs.length > 0 && (
+            <div>
+              <div className="flex items-center space-x-2 mb-4">
+                <BookmarkCheck className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-semibold">Saved Job Configurations</h3>
+                <Badge variant="outline">{savedJobConfigs.length}</Badge>
+              </div>
+              <div className="space-y-3">
+                {savedJobConfigs.map((interview) => (
+                  <Card key={interview.id} className="hover:shadow-lift transition-shadow cursor-pointer pricing-card border-primary/20">
+                    <CardContent className="pt-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <Bookmark className="h-4 w-4 text-primary" />
+                            <h4 className="font-semibold">
+                              {getJobTitle(interview.job_details)}
+                            </h4>
+                            <Badge variant="outline" className="text-xs bg-primary-light border-primary/30">
+                              Ready to Interview
+                            </Badge>
+                          </div>
+                          
+                          <p className="text-muted-foreground mb-2">
+                            {getCompanyName(interview.job_details)}
+                          </p>
+                          
+                          <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                            <div className="flex items-center space-x-1">
+                              <Calendar className="h-4 w-4" />
+                              <span>Saved {new Date(interview.created_at).toLocaleDateString()}</span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <Clock className="h-4 w-4" />
+                              <span>{new Date(interview.created_at).toLocaleTimeString()}</span>
+                            </div>
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => navigate(`/report/${interview.id}`)}
-                    className="ml-4"
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    View Report
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                        
+                        <Button
+                          onClick={() => startInterviewFromSaved(interview)}
+                          size="sm"
+                          className="ml-4"
+                        >
+                          <Play className="h-4 w-4 mr-2" />
+                          Start Interview
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Completed Interviews */}
+          {completedInterviews.length > 0 && (
+            <div>
+              <div className="flex items-center space-x-2 mb-4">
+                <FileText className="h-5 w-5 text-muted-foreground" />
+                <h3 className="text-lg font-semibold">Completed Interviews</h3>
+                <Badge variant="outline">{completedInterviews.length}</Badge>
+              </div>
+              <div className="space-y-3">
+                {completedInterviews.map((interview) => (
+                  <Card key={interview.id} className="hover:shadow-lift transition-shadow cursor-pointer pricing-card">
+                    <CardContent className="pt-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <h4 className="font-semibold">
+                              {getJobTitle(interview.job_details)}
+                            </h4>
+                            {interview.overall_score && (
+                              <Badge className={`${getScoreColor(interview.overall_score)} border`}>
+                                {interview.overall_score.toFixed(1)}/10
+                              </Badge>
+                            )}
+                          </div>
+                          
+                          <p className="text-muted-foreground mb-2">
+                            {getCompanyName(interview.job_details)}
+                          </p>
+                          
+                          <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                            <div className="flex items-center space-x-1">
+                              <Calendar className="h-4 w-4" />
+                              <span>{new Date(interview.created_at).toLocaleDateString()}</span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <Clock className="h-4 w-4" />
+                              <span>{new Date(interview.created_at).toLocaleTimeString()}</span>
+                            </div>
+                            {interview.report_data?.hiringRecommendation && (
+                              <div className="flex items-center space-x-1">
+                                <TrendingUp className="h-4 w-4" />
+                                <span className="capitalize">
+                                  {interview.report_data.hiringRecommendation.replace('_', ' ')}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center space-x-2 ml-4">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => startInterviewFromSaved(interview)}
+                          >
+                            <Play className="h-4 w-4 mr-2" />
+                            Interview Again
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigate(`/report/${interview.id}`)}
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Report
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </ScrollArea>
 
