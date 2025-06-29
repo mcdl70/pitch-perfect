@@ -163,7 +163,7 @@ Please provide the next interview question as a JSON response. Consider the conv
 
     // Prepare the API request
     const apiRequest = {
-      model: 'gpt-4',
+      model: 'gpt-4o',
       messages: [
         {
           role: 'system',
@@ -175,7 +175,7 @@ Please provide the next interview question as a JSON response. Consider the conv
         }
       ],
       temperature: 0.4,
-      max_tokens: 1500
+      max_tokens: 15000
     }
 
     // Call OpenAI API
