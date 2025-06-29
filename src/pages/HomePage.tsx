@@ -19,7 +19,8 @@ import {
   Loader2,
   Sparkles,
   Target,
-  Brain
+  Brain,
+  AlertTriangle
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -75,6 +76,10 @@ function JobInputForm({ onJobAnalyzed }: JobInputFormProps) {
         })
       })
 
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
       const data = await response.json()
 
       if (!data.success) {
@@ -100,7 +105,24 @@ function JobInputForm({ onJobAnalyzed }: JobInputFormProps) {
 
     } catch (err) {
       console.error('Error analyzing job post:', err)
-      setError(err instanceof Error ? err.message : 'Failed to analyze job posting')
+      
+      // Set user-friendly error message
+      let errorMessage = 'Could not analyze the job post. Please check the URL and try again.'
+      
+      if (err instanceof Error) {
+        // Handle specific error types
+        if (err.message.includes('fetch')) {
+          errorMessage = 'Network error. Please check your connection and try again.'
+        } else if (err.message.includes('401') || err.message.includes('403')) {
+          errorMessage = 'Authentication error. Please refresh the page and try again.'
+        } else if (err.message.includes('429')) {
+          errorMessage = 'Too many requests. Please wait a moment and try again.'
+        } else if (err.message.includes('500')) {
+          errorMessage = 'Server error. Please try again in a few minutes.'
+        }
+      }
+      
+      setError(errorMessage)
       toast.error('Failed to analyze job posting')
     } finally {
       setIsAnalyzing(false)
@@ -121,6 +143,7 @@ function JobInputForm({ onJobAnalyzed }: JobInputFormProps) {
       <CardContent className="space-y-6">
         {error && (
           <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}

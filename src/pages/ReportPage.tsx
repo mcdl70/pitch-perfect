@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { useParams, useLocation, Link } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
@@ -8,6 +8,7 @@ import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { 
   FileText, 
   User, 
@@ -27,8 +28,11 @@ import {
   AlertTriangle,
   Lightbulb,
   Star,
-  BarChart3
+  BarChart3,
+  RefreshCw
 } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
+import { toast } from 'sonner'
 
 interface SkillAssessment {
   skill: string
@@ -558,69 +562,117 @@ export function ReportPage() {
   const { id } = useParams<{ id: string }>()
   const location = useLocation()
   const { user } = useAuth()
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   
-  // Get data from navigation state
-  const report: FeedbackReport = location.state?.report || {
-    overallScore: 7.5,
-    overallAssessment: "Strong performance with room for improvement in technical areas",
-    strengths: ["Clear communication", "Good problem-solving approach", "Strong cultural fit"],
-    areasForImprovement: ["Technical depth", "Specific examples", "Follow-up questions"],
-    technicalSkillsAssessment: {
-      score: 7.0,
-      details: "Good foundational knowledge with some gaps in advanced concepts",
-      specificSkills: [
-        { skill: "React", rating: 4, feedback: "Solid understanding of core concepts" },
-        { skill: "TypeScript", rating: 3, feedback: "Basic knowledge, needs more practice" }
-      ]
-    },
-    behavioralSkillsAssessment: {
-      score: 8.0,
-      details: "Excellent soft skills and team collaboration abilities",
-      traits: [
-        { trait: "Leadership", rating: 4, feedback: "Shows natural leadership qualities" },
-        { trait: "Communication", rating: 5, feedback: "Excellent verbal communication skills" }
-      ]
-    },
-    communicationSkills: {
-      score: 8.5,
-      clarity: 9,
-      structure: 8,
-      engagement: 8,
-      feedback: "Very clear and engaging communication style"
-    },
-    problemSolvingApproach: {
-      score: 7.5,
-      methodology: "Systematic approach with good analytical thinking",
-      creativity: 7,
-      analyticalThinking: 8,
-      feedback: "Good problem-solving methodology with room for more creative solutions"
-    },
-    culturalFit: {
-      score: 9.0,
-      alignment: "Excellent alignment with company values and culture",
-      feedback: "Strong cultural fit with demonstrated values alignment"
-    },
-    recommendedNextSteps: [
-      "Practice more advanced technical concepts",
-      "Prepare specific examples using STAR method",
-      "Research company-specific technologies"
-    ],
-    hiringRecommendation: 'hire',
-    confidenceLevel: 85,
-    detailedFeedback: [
-      {
-        question: "Tell me about yourself",
-        candidateResponse: "I'm a software engineer with 5 years of experience...",
-        evaluation: "Good introduction but could be more specific about achievements",
-        score: 7,
-        suggestions: ["Include specific metrics", "Mention relevant projects"]
+  // Get data from navigation state or try to fetch from database
+  const [report, setReport] = useState<FeedbackReport | null>(location.state?.report || null)
+  const [duration, setDuration] = useState<number>(location.state?.duration || 25)
+  const [jobAnalysis, setJobAnalysis] = useState(location.state?.jobAnalysis || null)
+  const [config, setConfig] = useState(location.state?.config || null)
+
+  // Check if there was an error from the interview completion
+  const interviewError = location.state?.error
+
+  useEffect(() => {
+    // If we don't have report data and have a valid ID, try to fetch from database
+    if (!report && id && id !== 'error' && user) {
+      fetchReportData()
+    } else if (id === 'error' || interviewError) {
+      setError('Report not found or you do not have permission to view it.')
+    }
+  }, [id, report, user, interviewError])
+
+  const fetchReportData = async () => {
+    setLoading(true)
+    setError('')
+
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('interviews')
+        .select('*')
+        .eq('id', id)
+        .eq('user_id', user?.id)
+        .single()
+
+      if (fetchError) {
+        throw new Error('Interview not found or access denied')
       }
-    ]
+
+      if (data) {
+        setReport(data.report_data)
+        setJobAnalysis(data.job_details)
+        setDuration(data.transcript?.duration || 25)
+        setConfig(data.transcript?.config || null)
+      } else {
+        throw new Error('No interview data found')
+      }
+    } catch (err) {
+      console.error('Error fetching report:', err)
+      setError('Report not found or you do not have permission to view it.')
+      toast.error('Failed to load interview report')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const duration = location.state?.duration || 25
-  const jobAnalysis = location.state?.jobAnalysis
-  const config = location.state?.config
+  const retryFetchReport = () => {
+    if (id && id !== 'error') {
+      fetchReportData()
+    }
+  }
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
+              <p className="text-muted-foreground">Loading interview report...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Show error state
+  if (error || !report) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto">
+          <Alert variant="destructive" className="mb-8">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription className="flex items-center justify-between">
+              <span>{error || 'Report not found or you do not have permission to view it.'}</span>
+              {id && id !== 'error' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={retryFetchReport}
+                  className="ml-2"
+                >
+                  <RefreshCw className="h-4 w-4 mr-1" />
+                  Retry
+                </Button>
+              )}
+            </AlertDescription>
+          </Alert>
+          
+          <div className="text-center">
+            <Button asChild>
+              <Link to="/">
+                <Home className="mr-2 h-4 w-4" />
+                Return Home
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -652,6 +704,16 @@ export function ReportPage() {
           </p>
         </div>
 
+        {/* Show warning if there was an error during interview completion */}
+        {interviewError && (
+          <Alert className="mb-8">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              There was an issue generating the complete report. Some data may be missing or incomplete.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Interview Metadata */}
         <Card className="mb-8">
           <CardContent className="pt-6">
@@ -680,7 +742,7 @@ export function ReportPage() {
               <div className="flex items-center space-x-2">
                 <Award className="h-4 w-4 text-muted-foreground" />
                 <div>
-                  <p className="text-sm font-medium">{report.confidenceLevel}%</p>
+                  <p className="text-sm font-medium">{report.confidenceLevel || 85}%</p>
                   <p className="text-xs text-muted-foreground">Confidence Level</p>
                 </div>
               </div>

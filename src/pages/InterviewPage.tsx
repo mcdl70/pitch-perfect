@@ -25,7 +25,9 @@ import {
   ArrowRight,
   Mic,
   MicOff,
-  Volume2
+  Volume2,
+  AlertTriangle,
+  RefreshCw
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
@@ -250,6 +252,7 @@ function ChatInterface({ jobAnalysis, config, onInterviewComplete }: ChatInterfa
   const [interviewStage, setInterviewStage] = useState<'start' | 'technical' | 'behavioral' | 'situational' | 'closing'>('start')
   const [startTime] = useState(Date.now())
   const [isRecording, setIsRecording] = useState(false)
+  const [error, setError] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const { user } = useAuth()
 
@@ -268,6 +271,8 @@ function ChatInterface({ jobAnalysis, config, onInterviewComplete }: ChatInterfa
 
   const startInterview = async () => {
     setIsLoading(true)
+    setError('')
+    
     try {
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/interview-engine`, {
         method: 'POST',
@@ -282,8 +287,17 @@ function ChatInterface({ jobAnalysis, config, onInterviewComplete }: ChatInterfa
         })
       })
 
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
       const data = await response.json()
-      if (data.success) {
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to start interview')
+      }
+
+      if (data.interview) {
         const welcomeMessage: Message = {
           id: Date.now().toString(),
           role: 'interviewer',
@@ -295,6 +309,17 @@ function ChatInterface({ jobAnalysis, config, onInterviewComplete }: ChatInterfa
       }
     } catch (error) {
       console.error('Error starting interview:', error)
+      
+      let errorMessage = 'Failed to start the interview. Please try again.'
+      if (error instanceof Error) {
+        if (error.message.includes('fetch')) {
+          errorMessage = 'Network error. Please check your connection and try again.'
+        } else if (error.message.includes('500')) {
+          errorMessage = 'Server error. Please try again in a few minutes.'
+        }
+      }
+      
+      setError(errorMessage)
       toast.error('Failed to start interview')
     } finally {
       setIsLoading(false)
@@ -312,8 +337,10 @@ function ChatInterface({ jobAnalysis, config, onInterviewComplete }: ChatInterfa
     }
 
     setMessages(prev => [...prev, candidateMessage])
+    const messageToSend = currentMessage
     setCurrentMessage('')
     setIsLoading(true)
+    setError('')
 
     try {
       const conversationHistory = [...messages, candidateMessage].map(msg => ({
@@ -330,14 +357,23 @@ function ChatInterface({ jobAnalysis, config, onInterviewComplete }: ChatInterfa
         },
         body: JSON.stringify({
           jobAnalysis,
-          candidateResponse: currentMessage,
+          candidateResponse: messageToSend,
           conversationHistory,
           interviewStage
         })
       })
 
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
       const data = await response.json()
-      if (data.success) {
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to get interview response')
+      }
+
+      if (data.interview) {
         const interviewerMessage: Message = {
           id: (Date.now() + 1).toString(),
           role: 'interviewer',
@@ -362,6 +398,19 @@ function ChatInterface({ jobAnalysis, config, onInterviewComplete }: ChatInterfa
       }
     } catch (error) {
       console.error('Error sending message:', error)
+      
+      let errorMessage = 'Sorry, an error occurred. Please try sending your message again.'
+      if (error instanceof Error) {
+        if (error.message.includes('fetch')) {
+          errorMessage = 'Network error. Please check your connection and try again.'
+        } else if (error.message.includes('429')) {
+          errorMessage = 'Too many requests. Please wait a moment and try again.'
+        } else if (error.message.includes('500')) {
+          errorMessage = 'Server error. Please try again in a few minutes.'
+        }
+      }
+      
+      setError(errorMessage)
       toast.error('Failed to send message')
     } finally {
       setIsLoading(false)
@@ -393,9 +442,17 @@ function ChatInterface({ jobAnalysis, config, onInterviewComplete }: ChatInterfa
         })
       })
 
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
       const feedbackData = await response.json()
       
-      if (feedbackData.success) {
+      if (!feedbackData.success) {
+        throw new Error(feedbackData.error || 'Failed to generate feedback report')
+      }
+      
+      if (feedbackData.report) {
         // Save interview to database
         const { data: interviewRecord, error } = await supabase
           .from('interviews')
@@ -411,6 +468,7 @@ function ChatInterface({ jobAnalysis, config, onInterviewComplete }: ChatInterfa
 
         if (error) {
           console.error('Error saving interview:', error)
+          toast.error('Failed to save interview results')
         }
 
         onInterviewComplete({
@@ -422,6 +480,14 @@ function ChatInterface({ jobAnalysis, config, onInterviewComplete }: ChatInterfa
     } catch (error) {
       console.error('Error completing interview:', error)
       toast.error('Failed to generate feedback report')
+      
+      // Still navigate to report page with basic data
+      onInterviewComplete({
+        interviewId: null,
+        report: null,
+        duration: interviewDuration,
+        error: 'Failed to generate complete report'
+      })
     }
   }
 
@@ -436,6 +502,16 @@ function ChatInterface({ jobAnalysis, config, onInterviewComplete }: ChatInterfa
     const stages = ['start', 'technical', 'behavioral', 'situational', 'closing']
     const currentIndex = stages.indexOf(interviewStage)
     return ((currentIndex + 1) / stages.length) * 100
+  }
+
+  const retryLastMessage = () => {
+    if (messages.length > 0) {
+      const lastCandidateMessage = [...messages].reverse().find(msg => msg.role === 'candidate')
+      if (lastCandidateMessage) {
+        setCurrentMessage(lastCandidateMessage.content)
+        setError('')
+      }
+    }
   }
 
   return (
@@ -476,6 +552,25 @@ function ChatInterface({ jobAnalysis, config, onInterviewComplete }: ChatInterfa
           </div>
         </CardContent>
       </Card>
+
+      {/* Error Alert */}
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription className="flex items-center justify-between">
+            <span>{error}</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={retryLastMessage}
+              className="ml-2"
+            >
+              <RefreshCw className="h-4 w-4 mr-1" />
+              Retry
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Messages */}
       <Card className="flex-1 flex flex-col">
@@ -586,12 +681,13 @@ export function InterviewPage() {
 
   const handleInterviewComplete = (data: any) => {
     setInterviewData(data)
-    navigate(`/report/${data.interviewId}`, { 
+    navigate(`/report/${data.interviewId || 'error'}`, { 
       state: { 
         report: data.report,
         duration: data.duration,
         jobAnalysis,
-        config: interviewConfig
+        config: interviewConfig,
+        error: data.error
       } 
     })
   }
@@ -599,7 +695,8 @@ export function InterviewPage() {
   if (!jobAnalysis) {
     return (
       <div className="container mx-auto px-4 py-12">
-        <Alert>
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
             No job analysis found. Please return to the home page and analyze a job posting first.
           </AlertDescription>
