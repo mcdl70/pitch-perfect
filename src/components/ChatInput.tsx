@@ -33,9 +33,9 @@ export function ChatInput({
   const [isTranscribing, setIsTranscribing] = useState(false)
   const [recordingError, setRecordingError] = useState('')
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null)
-  const [audioChunks, setAudioChunks] = useState<Blob[]>([])
   const [recordingTime, setRecordingTime] = useState(0)
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const streamRef = useRef<MediaStream | null>(null)
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -45,21 +45,24 @@ export function ChatInput({
   }
 
   const getSupportedMimeType = () => {
-    // Try different MIME types in order of preference
+    // Try different MIME types in order of preference for OpenAI compatibility
     const types = [
+      'audio/wav',
+      'audio/mp4',
+      'audio/mpeg',
       'audio/webm;codecs=opus',
       'audio/webm',
-      'audio/mp4',
-      'audio/wav'
+      'audio/ogg'
     ]
     
     for (const type of types) {
       if (MediaRecorder.isTypeSupported(type)) {
+        console.log('Selected MIME type:', type)
         return type
       }
     }
     
-    // Fallback to default
+    console.log('Using fallback MIME type: audio/webm')
     return 'audio/webm'
   }
 
@@ -72,25 +75,26 @@ export function ChatInput({
         throw new Error('Audio recording is not supported in this browser')
       }
 
-      // Request microphone access with specific constraints
+      // Request microphone access with optimized constraints for speech
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
-          sampleRate: 16000, // Lower sample rate for better compatibility
+          sampleRate: 44100, // Higher quality for better transcription
           channelCount: 1, // Mono audio
         } 
       })
 
+      streamRef.current = stream
+
       // Get supported MIME type
       const mimeType = getSupportedMimeType()
-      console.log('Using MIME type:', mimeType)
 
-      // Create MediaRecorder instance
+      // Create MediaRecorder instance with optimized settings
       const recorder = new MediaRecorder(stream, {
         mimeType: mimeType,
-        audioBitsPerSecond: 128000 // Set bit rate for consistent quality
+        audioBitsPerSecond: 128000
       })
 
       const chunks: Blob[] = []
@@ -98,12 +102,18 @@ export function ChatInput({
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           chunks.push(event.data)
+          console.log('Audio chunk received:', event.data.size, 'bytes')
         }
       }
 
       recorder.onstop = async () => {
+        console.log('Recording stopped, processing audio...')
+        
         // Stop all tracks to release microphone
-        stream.getTracks().forEach(track => track.stop())
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop())
+          streamRef.current = null
+        }
         
         // Check if we have enough data
         if (chunks.length === 0) {
@@ -111,28 +121,31 @@ export function ChatInput({
           return
         }
         
-        // Create audio blob with explicit type
-        const audioBlob = new Blob(chunks, { 
-          type: mimeType
-        })
-        
-        // Check minimum file size (at least 1KB)
-        if (audioBlob.size < 1024) {
-          setRecordingError('Recording too short. Please record for at least 1 second.')
-          return
-        }
+        // Create audio blob
+        const audioBlob = new Blob(chunks, { type: mimeType })
         
         console.log('Audio blob created:', {
           size: audioBlob.size,
           type: audioBlob.type,
+          chunks: chunks.length,
           duration: recordingTime
         })
+        
+        // Check minimum requirements
+        if (audioBlob.size < 1024) {
+          setRecordingError('Recording too short or empty. Please record for at least 2 seconds.')
+          return
+        }
+        
+        if (recordingTime < 1) {
+          setRecordingError('Recording too short. Please record for at least 2 seconds.')
+          return
+        }
         
         // Transcribe the audio
         await transcribeAudio(audioBlob, mimeType)
         
         // Reset state
-        setAudioChunks([])
         setRecordingTime(0)
       }
 
@@ -142,11 +155,10 @@ export function ChatInput({
         stopRecording()
       }
 
-      // Start recording
-      recorder.start(250) // Collect data every 250ms for better quality
+      // Start recording with frequent data collection
+      recorder.start(100) // Collect data every 100ms
       setMediaRecorder(recorder)
       setIsRecording(true)
-      setAudioChunks(chunks)
 
       // Start timer
       setRecordingTime(0)
@@ -154,7 +166,7 @@ export function ChatInput({
         setRecordingTime(prev => prev + 1)
       }, 1000)
 
-      toast.success('Recording started')
+      toast.success('Recording started - speak clearly into your microphone')
 
     } catch (error) {
       console.error('Error starting recording:', error)
@@ -177,6 +189,7 @@ export function ChatInput({
 
   const stopRecording = () => {
     if (mediaRecorder && mediaRecorder.state === 'recording') {
+      console.log('Stopping recording...')
       mediaRecorder.stop()
     }
     
@@ -189,7 +202,13 @@ export function ChatInput({
       recordingTimerRef.current = null
     }
     
-    toast.success('Recording stopped')
+    // Stop stream if still active
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop())
+      streamRef.current = null
+    }
+    
+    toast.success('Recording stopped, processing...')
   }
 
   const transcribeAudio = async (audioBlob: Blob, originalMimeType: string) => {
@@ -197,36 +216,42 @@ export function ChatInput({
     setRecordingError('')
 
     try {
-      // Convert to a more compatible format if needed
-      let finalBlob = audioBlob
-      let filename = 'recording.webm'
+      console.log('Starting transcription process...')
       
-      // Determine file extension based on MIME type
+      // Determine the best filename and format for OpenAI
+      let filename = 'recording.wav'
+      let finalMimeType = originalMimeType
+      
       if (originalMimeType.includes('mp4')) {
         filename = 'recording.mp4'
-      } else if (originalMimeType.includes('wav')) {
-        filename = 'recording.wav'
+      } else if (originalMimeType.includes('mpeg') || originalMimeType.includes('mp3')) {
+        filename = 'recording.mp3'
       } else if (originalMimeType.includes('webm')) {
         filename = 'recording.webm'
+      } else if (originalMimeType.includes('ogg')) {
+        filename = 'recording.ogg'
+      } else if (originalMimeType.includes('wav')) {
+        filename = 'recording.wav'
       }
 
-      console.log('Preparing to transcribe:', {
-        size: finalBlob.size,
-        type: finalBlob.type,
-        filename: filename
+      console.log('Preparing audio file:', {
+        originalSize: audioBlob.size,
+        originalType: originalMimeType,
+        filename: filename,
+        finalType: finalMimeType
       })
 
-      // Create FormData with proper file structure
+      // Create FormData with the audio file
       const formData = new FormData()
       
-      // Create a proper File object instead of just appending the blob
-      const audioFile = new File([finalBlob], filename, {
-        type: finalBlob.type || 'audio/webm'
+      // Create a proper File object with correct MIME type
+      const audioFile = new File([audioBlob], filename, {
+        type: finalMimeType
       })
       
       formData.append('audio', audioFile)
 
-      console.log('Sending transcription request...')
+      console.log('Sending transcription request to Supabase Edge Function...')
 
       // Send to transcription endpoint
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transcribe-audio`, {
@@ -237,29 +262,42 @@ export function ChatInput({
         body: formData
       })
 
-      console.log('Transcription response status:', response.status)
+      console.log('Transcription response received:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
+      })
 
       if (!response.ok) {
-        const errorText = await response.text()
-        console.error('Transcription error response:', errorText)
+        let errorText = ''
+        try {
+          errorText = await response.text()
+          console.error('Transcription error response body:', errorText)
+        } catch (e) {
+          console.error('Could not read error response body')
+        }
         
         let errorMessage = 'Failed to transcribe audio'
         if (response.status === 400) {
-          errorMessage = 'Invalid audio format or file. Please try recording again.'
+          errorMessage = 'Invalid audio format. Please try recording again with a different browser or device.'
         } else if (response.status === 413) {
           errorMessage = 'Audio file too large. Please record a shorter message.'
         } else if (response.status === 429) {
           errorMessage = 'Too many requests. Please wait a moment and try again.'
+        } else if (response.status === 401 || response.status === 403) {
+          errorMessage = 'Authentication error. Please refresh the page and try again.'
+        } else if (response.status === 500) {
+          errorMessage = 'Server error. Please try again or use text input instead.'
         }
         
-        throw new Error(errorMessage)
+        throw new Error(`${errorMessage} (Status: ${response.status})`)
       }
 
       const data = await response.json()
-      console.log('Transcription response:', data)
+      console.log('Transcription response data:', data)
 
       if (!data.success) {
-        throw new Error(data.error || 'Failed to transcribe audio')
+        throw new Error(data.error || 'Transcription failed')
       }
 
       // Update input with transcribed text
@@ -268,24 +306,28 @@ export function ChatInput({
         // If there's existing text, add a space before the transcription
         const newText = input.trim() ? `${input} ${transcribedText}` : transcribedText
         setInput(newText)
-        toast.success('Audio transcribed successfully!')
+        toast.success(`Audio transcribed: "${transcribedText.substring(0, 50)}${transcribedText.length > 50 ? '...' : ''}"`)
       } else {
-        toast.warning('No speech detected in the recording')
+        toast.warning('No speech detected in the recording. Please try speaking more clearly.')
       }
 
     } catch (error) {
       console.error('Error transcribing audio:', error)
       
-      let errorMessage = 'Failed to transcribe audio. Please try again.'
+      let errorMessage = 'Failed to transcribe audio. Please try again or use text input.'
       if (error instanceof Error) {
         if (error.message.includes('fetch') || error.message.includes('network')) {
           errorMessage = 'Network error. Please check your connection and try again.'
         } else if (error.message.includes('format') || error.message.includes('Invalid audio')) {
-          errorMessage = 'Audio format not supported. Please try recording again.'
+          errorMessage = 'Audio format not supported. Please try recording again or use text input.'
         } else if (error.message.includes('large')) {
           errorMessage = 'Recording too long. Please record a shorter message.'
-        } else if (error.message.includes('requests')) {
+        } else if (error.message.includes('requests') || error.message.includes('429')) {
           errorMessage = 'Too many requests. Please wait a moment and try again.'
+        } else if (error.message.includes('Authentication') || error.message.includes('401') || error.message.includes('403')) {
+          errorMessage = 'Authentication error. Please refresh the page and try again.'
+        } else if (error.message.includes('500')) {
+          errorMessage = 'Server error. Please try again later or use text input.'
         } else {
           errorMessage = error.message
         }
@@ -305,7 +347,7 @@ export function ChatInput({
   }
 
   // Prevent recording if it's too short
-  const canStopRecording = recordingTime >= 1
+  const canStopRecording = recordingTime >= 2
 
   return (
     <div className="space-y-3">
@@ -322,8 +364,8 @@ export function ChatInput({
         <div className="flex items-center justify-center space-x-2 text-sm text-muted-foreground bg-red-50 border border-red-200 rounded-lg p-2">
           <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
           <span>Recording... {formatRecordingTime(recordingTime)}</span>
-          {recordingTime < 1 && (
-            <span className="text-xs text-orange-600">(minimum 1 second)</span>
+          {recordingTime < 2 && (
+            <span className="text-xs text-orange-600">(minimum 2 seconds)</span>
           )}
         </div>
       )}
@@ -359,7 +401,7 @@ export function ChatInput({
             className="self-end"
             title={
               isRecording 
-                ? (canStopRecording ? "Stop recording" : "Recording... (minimum 1 second)")
+                ? (canStopRecording ? "Stop recording" : "Recording... (minimum 2 seconds)")
                 : "Start voice recording"
             }
           >
