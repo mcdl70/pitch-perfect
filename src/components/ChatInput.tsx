@@ -27,7 +27,7 @@ export function ChatInput({
   handleSubmit, 
   isLoading, 
   disabled = false,
-  placeholder = "Type your response here... (Press Enter to send, Shift+Enter for new line)"
+  placeholder = "Speak your response using the microphone or type here for confirmation..."
 }: ChatInputProps) {
   const [isRecording, setIsRecording] = useState(false)
   const [isTranscribing, setIsTranscribing] = useState(false)
@@ -166,7 +166,7 @@ export function ChatInput({
         setRecordingTime(prev => prev + 1)
       }, 1000)
 
-      toast.success('Recording started - speak clearly into your microphone')
+      toast.success('🎙️ Recording started - speak clearly into your microphone')
 
     } catch (error) {
       console.error('Error starting recording:', error)
@@ -208,7 +208,7 @@ export function ChatInput({
       streamRef.current = null
     }
     
-    toast.success('Recording stopped, processing...')
+    toast.success('🔄 Recording stopped, processing...')
   }
 
   const transcribeAudio = async (audioBlob: Blob, originalMimeType: string) => {
@@ -303,10 +303,9 @@ export function ChatInput({
       // Update input with transcribed text
       const transcribedText = data.transcription
       if (transcribedText && transcribedText.trim()) {
-        // If there's existing text, add a space before the transcription
-        const newText = input.trim() ? `${input} ${transcribedText}` : transcribedText
-        setInput(newText)
-        toast.success(`Audio transcribed: "${transcribedText.substring(0, 50)}${transcribedText.length > 50 ? '...' : ''}"`)
+        // Replace the input with the transcription (voice-first approach)
+        setInput(transcribedText)
+        toast.success(`✅ "${transcribedText.substring(0, 50)}${transcribedText.length > 50 ? '...' : ''}"`)
       } else {
         toast.warning('No speech detected in the recording. Please try speaking more clearly.')
       }
@@ -363,7 +362,7 @@ export function ChatInput({
       {isRecording && (
         <div className="flex items-center justify-center space-x-2 text-sm text-muted-foreground bg-red-50 border border-red-200 rounded-lg p-2">
           <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-          <span>Recording... {formatRecordingTime(recordingTime)}</span>
+          <span>🎙️ Recording... {formatRecordingTime(recordingTime)}</span>
           {recordingTime < 2 && (
             <span className="text-xs text-orange-600">(minimum 2 seconds)</span>
           )}
@@ -374,50 +373,58 @@ export function ChatInput({
       {isTranscribing && (
         <div className="flex items-center justify-center space-x-2 text-sm text-muted-foreground bg-blue-50 border border-blue-200 rounded-lg p-2">
           <Loader2 className="h-4 w-4 animate-spin" />
-          <span>Transcribing audio...</span>
+          <span>🔄 Transcribing audio...</span>
         </div>
       )}
 
-      {/* Input Area */}
+      {/* Input Area - Voice-First Layout */}
       <div className="flex space-x-2">
-        <Textarea
-          placeholder={placeholder}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyPress={handleKeyPress}
-          disabled={disabled || isLoading || isTranscribing}
-          rows={2}
-          className="flex-1 resize-none"
-        />
-        
-        <div className="flex flex-col space-y-2">
-          {/* Voice Recording Button */}
-          <Button
-            type="button"
-            variant={isRecording ? "destructive" : "outline"}
-            size="sm"
-            onClick={isRecording ? (canStopRecording ? stopRecording : undefined) : startRecording}
-            disabled={disabled || isLoading || isTranscribing || (isRecording && !canStopRecording)}
-            className="self-end"
-            title={
-              isRecording 
-                ? (canStopRecording ? "Stop recording" : "Recording... (minimum 2 seconds)")
-                : "Start voice recording"
-            }
-          >
-            {isRecording ? (
-              <Square className="h-4 w-4" />
-            ) : (
-              <Mic className="h-4 w-4" />
-            )}
-          </Button>
+        {/* Large Voice Recording Button - Primary Input Method */}
+        <Button
+          type="button"
+          variant={isRecording ? "destructive" : "default"}
+          size="lg"
+          onClick={isRecording ? (canStopRecording ? stopRecording : undefined) : startRecording}
+          disabled={disabled || isLoading || isTranscribing || (isRecording && !canStopRecording)}
+          className="px-6"
+          title={
+            isRecording 
+              ? (canStopRecording ? "Stop recording" : "Recording... (minimum 2 seconds)")
+              : "Start voice recording (Primary input method)"
+          }
+        >
+          {isRecording ? (
+            <>
+              <Square className="h-5 w-5 mr-2" />
+              Stop
+            </>
+          ) : (
+            <>
+              <Mic className="h-5 w-5 mr-2" />
+              Record
+            </>
+          )}
+        </Button>
 
+        {/* Text Input - Secondary/Confirmation Method */}
+        <div className="flex-1 flex space-x-2">
+          <Textarea
+            placeholder={placeholder}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyPress={handleKeyPress}
+            disabled={disabled || isLoading || isTranscribing}
+            rows={2}
+            className="flex-1 resize-none text-sm"
+          />
+          
           {/* Send Button */}
           <Button 
             type="submit"
             onClick={handleSubmit}
             disabled={!input.trim() || isLoading || isTranscribing || disabled}
             size="sm"
+            variant="outline"
             className="self-end"
           >
             {isLoading ? (
@@ -431,7 +438,8 @@ export function ChatInput({
 
       {/* Instructions */}
       <p className="text-xs text-muted-foreground text-center">
-        Press Enter to send, Shift+Enter for new line, or use the microphone to record your response
+        🎙️ <strong>Voice-First:</strong> Click "Record" to speak your response, or type for confirmation. 
+        Press Enter to send, Shift+Enter for new line.
       </p>
     </div>
   )

@@ -25,8 +25,11 @@ import {
   Mic,
   MicOff,
   Volume2,
+  VolumeX,
   AlertTriangle,
-  RefreshCw
+  RefreshCw,
+  Pause,
+  Square
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
@@ -50,6 +53,7 @@ interface InterviewConfig {
   difficulty: string
   focusAreas: string[]
   duration: number
+  voiceId: string
 }
 
 function InterviewSetup({ jobAnalysis, onStartInterview }: InterviewSetupProps) {
@@ -58,7 +62,8 @@ function InterviewSetup({ jobAnalysis, onStartInterview }: InterviewSetupProps) 
     interviewType: 'comprehensive',
     difficulty: 'adaptive',
     focusAreas: [],
-    duration: 30
+    duration: 30,
+    voiceId: 'pNInz6obpgDQGcFmaJgB' // Default to Adam (professional male)
   })
 
   const interviewerPersonas = [
@@ -73,6 +78,15 @@ function InterviewSetup({ jobAnalysis, onStartInterview }: InterviewSetupProps) 
     { value: 'technical', label: 'Technical Focus', description: 'Emphasis on technical skills and problem-solving' },
     { value: 'behavioral', label: 'Behavioral Focus', description: 'Focus on past experiences and soft skills' },
     { value: 'case-study', label: 'Case Study', description: 'Scenario-based problem solving' }
+  ]
+
+  const voiceOptions = [
+    { value: 'pNInz6obpgDQGcFmaJgB', label: 'Adam (Professional Male)', description: 'Clear, professional tone' },
+    { value: 'EXAVITQu4vr4xnSDxMaL', label: 'Bella (Professional Female)', description: 'Warm, engaging voice' },
+    { value: 'VR6AewLTigWG4xSOukaG', label: 'Arnold (Senior Executive)', description: 'Authoritative, experienced' },
+    { value: 'pqHfZKP75CvOlQylNhV4', label: 'Bill (Friendly Male)', description: 'Approachable, conversational' },
+    { value: 'IKne3meq5aSn9XLyUdCD', label: 'Charlie (Technical Expert)', description: 'Precise, analytical' },
+    { value: 'XB0fDUnXU5powFXDhCwa', label: 'Charlotte (HR Professional)', description: 'Supportive, encouraging' }
   ]
 
   const availableFocusAreas = jobAnalysis?.interviewFocus || [
@@ -97,7 +111,7 @@ function InterviewSetup({ jobAnalysis, onStartInterview }: InterviewSetupProps) 
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold mb-2">Interview Setup</h1>
         <p className="text-muted-foreground">
-          Customize your interview experience based on the analyzed job requirements
+          Customize your voice-first interview experience based on the analyzed job requirements
         </p>
       </div>
 
@@ -130,6 +144,31 @@ function InterviewSetup({ jobAnalysis, onStartInterview }: InterviewSetupProps) 
       </Card>
 
       <div className="grid md:grid-cols-2 gap-6">
+        {/* Interviewer Voice */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Interviewer Voice</CardTitle>
+            <CardDescription>Choose the voice that matches your target interviewer style</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Select value={config.voiceId} onValueChange={(value) => setConfig(prev => ({ ...prev, voiceId: value }))}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {voiceOptions.map(voice => (
+                  <SelectItem key={voice.value} value={voice.value}>
+                    <div>
+                      <div className="font-medium">{voice.label}</div>
+                      <div className="text-sm text-muted-foreground">{voice.description}</div>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
+
         {/* Interviewer Persona */}
         <Card>
           <CardHeader>
@@ -154,32 +193,32 @@ function InterviewSetup({ jobAnalysis, onStartInterview }: InterviewSetupProps) 
             </Select>
           </CardContent>
         </Card>
-
-        {/* Interview Type */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Interview Type</CardTitle>
-            <CardDescription>Select the focus and structure of your interview</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Select value={config.interviewType} onValueChange={(value) => setConfig(prev => ({ ...prev, interviewType: value }))}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {interviewTypes.map(type => (
-                  <SelectItem key={type.value} value={type.value}>
-                    <div>
-                      <div className="font-medium">{type.label}</div>
-                      <div className="text-sm text-muted-foreground">{type.description}</div>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </CardContent>
-        </Card>
       </div>
+
+      {/* Interview Type */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Interview Type</CardTitle>
+          <CardDescription>Select the focus and structure of your interview</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Select value={config.interviewType} onValueChange={(value) => setConfig(prev => ({ ...prev, interviewType: value }))}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {interviewTypes.map(type => (
+                <SelectItem key={type.value} value={type.value}>
+                  <div>
+                    <div className="font-medium">{type.label}</div>
+                    <div className="text-sm text-muted-foreground">{type.description}</div>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </CardContent>
+      </Card>
 
       {/* Focus Areas */}
       <Card>
@@ -226,13 +265,22 @@ function InterviewSetup({ jobAnalysis, onStartInterview }: InterviewSetupProps) 
         </CardContent>
       </Card>
 
+      <Alert>
+        <Volume2 className="h-4 w-4" />
+        <AlertDescription>
+          <strong>Voice-First Experience:</strong> This interview will be conducted primarily through voice. 
+          The interviewer will speak their questions, and you should respond using the microphone. 
+          Text will appear on screen for confirmation.
+        </AlertDescription>
+      </Alert>
+
       <Button 
         onClick={() => onStartInterview(config)}
         size="lg"
         className="w-full"
       >
         <Play className="mr-2 h-5 w-5" />
-        Start Interview
+        Start Voice Interview
       </Button>
     </div>
   )
@@ -250,8 +298,15 @@ function ChatInterface({ jobAnalysis, config, onInterviewComplete }: ChatInterfa
   const [isLoading, setIsLoading] = useState(false)
   const [interviewStage, setInterviewStage] = useState<'start' | 'technical' | 'behavioral' | 'situational' | 'closing'>('start')
   const [startTime] = useState(Date.now())
-  const [isRecording, setIsRecording] = useState(false)
   const [error, setError] = useState('')
+  
+  // Audio-related state
+  const [isAudioEnabled, setIsAudioEnabled] = useState(true)
+  const [isSpeaking, setIsSpeaking] = useState(false)
+  const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null)
+  const [audioQueue, setAudioQueue] = useState<string[]>([])
+  const [isProcessingAudio, setIsProcessingAudio] = useState(false)
+  
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const { user } = useAuth()
 
@@ -267,6 +322,113 @@ function ChatInterface({ jobAnalysis, config, onInterviewComplete }: ChatInterfa
     // Start the interview with an opening question
     startInterview()
   }, [])
+
+  // Process audio queue
+  useEffect(() => {
+    if (audioQueue.length > 0 && !isProcessingAudio && isAudioEnabled) {
+      processNextAudio()
+    }
+  }, [audioQueue, isProcessingAudio, isAudioEnabled])
+
+  const processNextAudio = async () => {
+    if (audioQueue.length === 0 || isProcessingAudio) return
+    
+    setIsProcessingAudio(true)
+    const textToSpeak = audioQueue[0]
+    
+    try {
+      await playInterviewerResponse(textToSpeak)
+    } catch (error) {
+      console.error('Error playing audio:', error)
+    } finally {
+      setAudioQueue(prev => prev.slice(1))
+      setIsProcessingAudio(false)
+    }
+  }
+
+  const playInterviewerResponse = async (text: string) => {
+    if (!isAudioEnabled || !text.trim()) return
+
+    setIsSpeaking(true)
+    
+    try {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/text-to-speech`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: text,
+          voiceId: config.voiceId,
+          stability: 0.5,
+          similarityBoost: 0.8,
+          style: 0.0,
+          useSpeakerBoost: true
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const audioBlob = await response.blob()
+      const audioUrl = URL.createObjectURL(audioBlob)
+      const audio = new Audio(audioUrl)
+      
+      setCurrentAudio(audio)
+
+      return new Promise<void>((resolve, reject) => {
+        audio.onended = () => {
+          setIsSpeaking(false)
+          setCurrentAudio(null)
+          URL.revokeObjectURL(audioUrl)
+          resolve()
+        }
+
+        audio.onerror = (error) => {
+          setIsSpeaking(false)
+          setCurrentAudio(null)
+          URL.revokeObjectURL(audioUrl)
+          console.error('Audio playback error:', error)
+          reject(error)
+        }
+
+        audio.play().catch(reject)
+      })
+
+    } catch (error) {
+      console.error('Error generating or playing speech:', error)
+      setIsSpeaking(false)
+      setCurrentAudio(null)
+      
+      // Show user-friendly error message
+      if (error instanceof Error && error.message.includes('429')) {
+        toast.error('Speech generation rate limit reached. Please wait a moment.')
+      } else {
+        toast.error('Unable to play audio. Please check your connection.')
+      }
+    }
+  }
+
+  const stopCurrentAudio = () => {
+    if (currentAudio) {
+      currentAudio.pause()
+      currentAudio.currentTime = 0
+      setCurrentAudio(null)
+      setIsSpeaking(false)
+    }
+    // Clear audio queue
+    setAudioQueue([])
+    setIsProcessingAudio(false)
+  }
+
+  const toggleAudio = () => {
+    if (isAudioEnabled) {
+      stopCurrentAudio()
+    }
+    setIsAudioEnabled(!isAudioEnabled)
+  }
 
   const startInterview = async () => {
     setIsLoading(true)
@@ -305,6 +467,11 @@ function ChatInterface({ jobAnalysis, config, onInterviewComplete }: ChatInterfa
           questionType: data.interview.questionType
         }
         setMessages([welcomeMessage])
+        
+        // Queue the welcome message for audio playback
+        if (isAudioEnabled) {
+          setAudioQueue([data.interview.question])
+        }
       }
     } catch (error) {
       console.error('Error starting interview:', error)
@@ -383,6 +550,11 @@ function ChatInterface({ jobAnalysis, config, onInterviewComplete }: ChatInterfa
         }
 
         setMessages(prev => [...prev, interviewerMessage])
+
+        // Queue the interviewer response for audio playback
+        if (isAudioEnabled) {
+          setAudioQueue(prev => [...prev, data.interview.question])
+        }
 
         // Update stage if needed
         if (data.interview.nextStage) {
@@ -521,19 +693,36 @@ function ChatInterface({ jobAnalysis, config, onInterviewComplete }: ChatInterfa
                 <Clock className="h-4 w-4" />
                 <span>{Math.round((Date.now() - startTime) / 1000 / 60)} min</span>
               </div>
+              {isSpeaking && (
+                <div className="flex items-center space-x-2 text-sm text-blue-600">
+                  <Volume2 className="h-4 w-4 animate-pulse" />
+                  <span>Speaking...</span>
+                </div>
+              )}
             </div>
             <div className="flex items-center space-x-2">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setIsRecording(!isRecording)}
-                className={isRecording ? 'bg-red-50 border-red-200' : ''}
+                onClick={toggleAudio}
+                className={isAudioEnabled ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}
               >
-                {isRecording ? <Mic className="h-4 w-4 text-red-600" /> : <MicOff className="h-4 w-4" />}
+                {isAudioEnabled ? (
+                  <Volume2 className="h-4 w-4 text-green-600" />
+                ) : (
+                  <VolumeX className="h-4 w-4 text-red-600" />
+                )}
               </Button>
-              <Button variant="outline" size="sm">
-                <Volume2 className="h-4 w-4" />
-              </Button>
+              {isSpeaking && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={stopCurrentAudio}
+                  className="bg-red-50 border-red-200"
+                >
+                  <Square className="h-4 w-4 text-red-600" />
+                </Button>
+              )}
             </div>
           </div>
           <div className="space-y-2">
@@ -568,7 +757,13 @@ function ChatInterface({ jobAnalysis, config, onInterviewComplete }: ChatInterfa
       {/* Messages */}
       <Card className="flex-1 flex flex-col">
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Interview Session</CardTitle>
+          <CardTitle className="text-lg flex items-center space-x-2">
+            <MessageSquare className="h-5 w-5" />
+            <span>Voice Interview Session</span>
+            {!isAudioEnabled && (
+              <Badge variant="outline" className="text-xs">Audio Disabled</Badge>
+            )}
+          </CardTitle>
         </CardHeader>
         <CardContent className="flex-1 flex flex-col p-0">
           <ScrollArea className="flex-1 px-6">
@@ -599,6 +794,9 @@ function ChatInterface({ jobAnalysis, config, onInterviewComplete }: ChatInterfa
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
                       {new Date(message.timestamp).toLocaleTimeString()}
+                      {message.role === 'interviewer' && isAudioEnabled && (
+                        <span className="ml-2">🔊</span>
+                      )}
                     </p>
                   </div>
                 </div>
@@ -628,10 +826,18 @@ function ChatInterface({ jobAnalysis, config, onInterviewComplete }: ChatInterfa
               input={currentMessage}
               setInput={setCurrentMessage}
               handleSubmit={sendMessage}
-              isLoading={isLoading}
-              disabled={false}
-              placeholder="Type your response here or use the microphone to record your answer..."
+              isLoading={isLoading || isSpeaking}
+              disabled={isSpeaking}
+              placeholder={isSpeaking 
+                ? "Please wait for the interviewer to finish speaking..." 
+                : "Speak your response using the microphone or type here for confirmation..."
+              }
             />
+            {isSpeaking && (
+              <p className="text-xs text-muted-foreground text-center mt-2">
+                🎙️ The interviewer is speaking. Please wait before responding.
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>
