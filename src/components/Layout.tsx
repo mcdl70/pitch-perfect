@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { LogOut, User, Shield, FileText, Briefcase } from 'lucide-react'
+import { LogOut, User, Shield, FileText, Briefcase, FolderOpen } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface LayoutProps {
@@ -56,10 +56,10 @@ export function Layout({ children }: LayoutProps) {
             {user && (
               <>
                 <Link 
-                  to="/interview" 
+                  to="/interviews" 
                   className="text-caption font-medium transition-colors hover:text-primary text-neutral-700"
                 >
-                  Interview
+                  Interviews
                 </Link>
                 <Link 
                   to="/reports" 
@@ -97,6 +97,12 @@ export function Layout({ children }: LayoutProps) {
                     <Link to="/interview" className="cursor-pointer">
                       <Briefcase className="mr-2 h-4 w-4" />
                       New Interview
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/interviews" className="cursor-pointer">
+                      <FolderOpen className="mr-2 h-4 w-4" />
+                      Manage Interviews
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>

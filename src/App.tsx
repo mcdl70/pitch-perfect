@@ -7,6 +7,7 @@ import { HomePage } from '@/pages/HomePage'
 import { LoginPage } from '@/pages/LoginPage'
 import { SignUpPage } from '@/pages/SignUpPage'
 import { InterviewPage } from '@/pages/InterviewPage'
+import { InterviewsPage } from '@/pages/InterviewsPage'
 import { ReportPage } from '@/pages/ReportPage'
 import { ReportsPage } from '@/pages/ReportsPage'
 import { Toaster } from '@/components/ui/sonner'
@@ -27,6 +28,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <InterviewPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/interviews" 
+                element={
+                  <ProtectedRoute>
+                    <InterviewsPage />
                   </ProtectedRoute>
                 } 
               />
