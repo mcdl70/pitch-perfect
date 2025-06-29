@@ -911,7 +911,7 @@ export function InterviewPage() {
 
   if (!jobAnalysis && !fullJobDetails) {
     return (
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 py-12 max-w-container">
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
@@ -923,7 +923,7 @@ export function InterviewPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 max-w-container">
       {currentView === 'setup' && (
         <InterviewSetup 
           jobAnalysis={jobAnalysis || fullJobDetails?.analysis}

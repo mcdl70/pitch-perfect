@@ -197,13 +197,11 @@ export function ReportsPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-center">
-              <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
-              <p className="text-muted-foreground">Loading your interview reports...</p>
-            </div>
+      <div className="container mx-auto px-4 py-8 max-w-container">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading your interview reports...</p>
           </div>
         </div>
       </div>
@@ -212,277 +210,273 @@ export function ReportsPage() {
 
   if (error) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription className="flex items-center justify-between">
-              <span>{error}</span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={fetchInterviews}
-                className="ml-2"
-              >
-                <RefreshCw className="h-4 w-4 mr-1" />
-                Retry
-              </Button>
-            </AlertDescription>
-          </Alert>
-        </div>
+      <div className="container mx-auto px-4 py-8 max-w-container">
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription className="flex items-center justify-between">
+            <span>{error}</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchInterviews}
+              className="ml-2"
+            >
+              <RefreshCw className="h-4 w-4 mr-1" />
+              Retry
+            </Button>
+          </AlertDescription>
+        </Alert>
       </div>
     )
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">Interview Reports</h1>
-              <p className="text-muted-foreground">
-                Track your interview performance and progress over time
-              </p>
-            </div>
-            <Button asChild>
-              <Link to="/">
-                <Plus className="mr-2 h-4 w-4" />
-                New Interview
-              </Link>
-            </Button>
+    <div className="container mx-auto px-4 py-8 max-w-container">
+      {/* Header */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Interview Reports</h1>
+            <p className="text-muted-foreground">
+              Track your interview performance and progress over time
+            </p>
           </div>
-
-          {/* Stats Cards */}
-          {interviews.length > 0 && (
-            <div className="grid md:grid-cols-3 gap-4 mb-6">
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Total Interviews</p>
-                      <p className="text-2xl font-bold">{stats.total}</p>
-                    </div>
-                    <BarChart3 className="h-8 w-8 text-blue-600" />
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Average Score</p>
-                      <p className="text-2xl font-bold">{stats.average.toFixed(1)}/10</p>
-                    </div>
-                    <TrendingUp className="h-8 w-8 text-green-600" />
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Highest Score</p>
-                      <p className="text-2xl font-bold">{stats.highest.toFixed(1)}/10</p>
-                    </div>
-                    <TrendingUp className="h-8 w-8 text-purple-600" />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
+          <Button asChild>
+            <Link to="/">
+              <Plus className="mr-2 h-4 w-4" />
+              New Interview
+            </Link>
+          </Button>
         </div>
 
-        {interviews.length === 0 ? (
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center py-12">
-                <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
-                  <FileText className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">No Interview Reports Yet</h3>
-                <p className="text-muted-foreground mb-4">
-                  Complete your first interview to see detailed performance reports here.
-                </p>
-                <Button asChild>
-                  <Link to="/">
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    Start Your First Interview
-                  </Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <>
-            {/* Filters and Search */}
-            <Card className="mb-6">
+        {/* Stats Cards */}
+        {interviews.length > 0 && (
+          <div className="grid md:grid-cols-3 gap-4 mb-6">
+            <Card>
               <CardContent className="pt-6">
-                <div className="flex flex-col md:flex-row gap-4">
-                  <div className="flex-1">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Search by job title or company..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Total Interviews</p>
+                    <p className="text-2xl font-bold">{stats.total}</p>
                   </div>
-                  
-                  <Select value={scoreFilter} onValueChange={setScoreFilter}>
-                    <SelectTrigger className="w-full md:w-48">
-                      <Filter className="h-4 w-4 mr-2" />
-                      <SelectValue placeholder="Filter by score" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Scores</SelectItem>
-                      <SelectItem value="excellent">Excellent (8-10)</SelectItem>
-                      <SelectItem value="good">Good (6-7.9)</SelectItem>
-                      <SelectItem value="needs_improvement">Needs Improvement (&lt;6)</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
-                    <SelectTrigger className="w-full md:w-48">
-                      <SelectValue placeholder="Sort by" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="date_desc">
-                        <div className="flex items-center">
-                          <SortDesc className="h-4 w-4 mr-2" />
-                          Newest First
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="date_asc">
-                        <div className="flex items-center">
-                          <SortAsc className="h-4 w-4 mr-2" />
-                          Oldest First
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="score_desc">Highest Score</SelectItem>
-                      <SelectItem value="score_asc">Lowest Score</SelectItem>
-                      <SelectItem value="company_asc">Company A-Z</SelectItem>
-                      <SelectItem value="company_desc">Company Z-A</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  <div className="flex border rounded-md">
-                    <Button
-                      variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                      size="sm"
-                      onClick={() => setViewMode('grid')}
-                      className="rounded-r-none"
-                    >
-                      <Grid className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant={viewMode === 'list' ? 'default' : 'ghost'}
-                      size="sm"
-                      onClick={() => setViewMode('list')}
-                      className="rounded-l-none"
-                    >
-                      <List className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <BarChart3 className="h-8 w-8 text-blue-600" />
                 </div>
               </CardContent>
             </Card>
-
-            {/* Results Count */}
-            <div className="mb-4">
-              <p className="text-sm text-muted-foreground">
-                Showing {filteredInterviews.length} of {interviews.length} interviews
-              </p>
-            </div>
-
-            {/* Interview List */}
-            {filteredInterviews.length === 0 ? (
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-center py-8">
-                    <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No interviews found</h3>
-                    <p className="text-muted-foreground">
-                      Try adjusting your search or filter criteria
-                    </p>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Average Score</p>
+                    <p className="text-2xl font-bold">{stats.average.toFixed(1)}/10</p>
                   </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className={viewMode === 'grid' ? 'grid md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}>
-                {filteredInterviews.map((interview) => (
-                  <Card key={interview.id} className="hover:shadow-md transition-shadow cursor-pointer">
-                    <CardContent className="pt-6">
-                      <div className={viewMode === 'list' ? 'flex items-center justify-between' : ''}>
-                        <div className={viewMode === 'list' ? 'flex-1' : ''}>
-                          <div className="flex items-center justify-between mb-2">
-                            <h3 className="font-semibold text-lg line-clamp-1">
-                              {getJobTitle(interview.job_details)}
-                            </h3>
-                            {interview.overall_score && (
-                              <Badge className={`${getScoreColor(interview.overall_score)} border ml-2`}>
-                                {interview.overall_score.toFixed(1)}/10
-                              </Badge>
-                            )}
-                          </div>
-                          
-                          <p className="text-muted-foreground mb-3">
-                            {getCompanyName(interview.job_details)}
-                          </p>
-                          
-                          <div className={`flex items-center space-x-4 text-sm text-muted-foreground ${viewMode === 'list' ? 'mb-0' : 'mb-4'}`}>
-                            <div className="flex items-center space-x-1">
-                              <Calendar className="h-4 w-4" />
-                              <span>{new Date(interview.created_at).toLocaleDateString()}</span>
-                            </div>
-                            <div className="flex items-center space-x-1">
-                              <Clock className="h-4 w-4" />
-                              <span>{new Date(interview.created_at).toLocaleTimeString()}</span>
-                            </div>
-                          </div>
+                  <TrendingUp className="h-8 w-8 text-green-600" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Highest Score</p>
+                    <p className="text-2xl font-bold">{stats.highest.toFixed(1)}/10</p>
+                  </div>
+                  <TrendingUp className="h-8 w-8 text-purple-600" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
 
-                          {interview.report_data?.hiringRecommendation && viewMode === 'grid' && (
-                            <div className="mb-4">
-                              {getRecommendationBadge(interview.report_data.hiringRecommendation)}
-                            </div>
+      {interviews.length === 0 ? (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center py-12">
+              <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                <FileText className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">No Interview Reports Yet</h3>
+              <p className="text-muted-foreground mb-4">
+                Complete your first interview to see detailed performance reports here.
+              </p>
+              <Button asChild>
+                <Link to="/">
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Start Your First Interview
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          {/* Filters and Search */}
+          <Card className="mb-6">
+            <CardContent className="pt-6">
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search by job title or company..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                
+                <Select value={scoreFilter} onValueChange={setScoreFilter}>
+                  <SelectTrigger className="w-full md:w-48">
+                    <Filter className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Filter by score" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Scores</SelectItem>
+                    <SelectItem value="excellent">Excellent (8-10)</SelectItem>
+                    <SelectItem value="good">Good (6-7.9)</SelectItem>
+                    <SelectItem value="needs_improvement">Needs Improvement (<6)</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
+                  <SelectTrigger className="w-full md:w-48">
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="date_desc">
+                      <div className="flex items-center">
+                        <SortDesc className="h-4 w-4 mr-2" />
+                        Newest First
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="date_asc">
+                      <div className="flex items-center">
+                        <SortAsc className="h-4 w-4 mr-2" />
+                        Oldest First
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="score_desc">Highest Score</SelectItem>
+                    <SelectItem value="score_asc">Lowest Score</SelectItem>
+                    <SelectItem value="company_asc">Company A-Z</SelectItem>
+                    <SelectItem value="company_desc">Company Z-A</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <div className="flex border rounded-md">
+                  <Button
+                    variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('grid')}
+                    className="rounded-r-none"
+                  >
+                    <Grid className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant={viewMode === 'list' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('list')}
+                    className="rounded-l-none"
+                  >
+                    <List className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Results Count */}
+          <div className="mb-4">
+            <p className="text-sm text-muted-foreground">
+              Showing {filteredInterviews.length} of {interviews.length} interviews
+            </p>
+          </div>
+
+          {/* Interview List */}
+          {filteredInterviews.length === 0 ? (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center py-8">
+                  <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No interviews found</h3>
+                  <p className="text-muted-foreground">
+                    Try adjusting your search or filter criteria
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className={viewMode === 'grid' ? 'grid md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}>
+              {filteredInterviews.map((interview) => (
+                <Card key={interview.id} className="hover:shadow-md transition-shadow cursor-pointer">
+                  <CardContent className="pt-6">
+                    <div className={viewMode === 'list' ? 'flex items-center justify-between' : ''}>
+                      <div className={viewMode === 'list' ? 'flex-1' : ''}>
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="font-semibold text-lg line-clamp-1">
+                            {getJobTitle(interview.job_details)}
+                          </h3>
+                          {interview.overall_score && (
+                            <Badge className={`${getScoreColor(interview.overall_score)} border ml-2`}>
+                              {interview.overall_score.toFixed(1)}/10
+                            </Badge>
                           )}
                         </div>
                         
-                        <div className={viewMode === 'list' ? 'flex items-center space-x-2 ml-4' : 'flex space-x-2'}>
-                          {interview.report_data?.hiringRecommendation && viewMode === 'list' && (
-                            <div className="mr-2">
-                              {getRecommendationBadge(interview.report_data.hiringRecommendation)}
-                            </div>
-                          )}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => navigate(`/report/${interview.id}`)}
-                          >
-                            <Eye className="h-4 w-4 mr-2" />
-                            View Report
-                          </Button>
+                        <p className="text-muted-foreground mb-3">
+                          {getCompanyName(interview.job_details)}
+                        </p>
+                        
+                        <div className={`flex items-center space-x-4 text-sm text-muted-foreground ${viewMode === 'list' ? 'mb-0' : 'mb-4'}`}>
+                          <div className="flex items-center space-x-1">
+                            <Calendar className="h-4 w-4" />
+                            <span>{new Date(interview.created_at).toLocaleDateString()}</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <Clock className="h-4 w-4" />
+                            <span>{new Date(interview.created_at).toLocaleTimeString()}</span>
+                          </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
 
-            {/* Load More / Pagination could go here in the future */}
-            <div className="text-center mt-8">
-              <Button variant="outline" onClick={fetchInterviews}>
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh
-              </Button>
+                        {interview.report_data?.hiringRecommendation && viewMode === 'grid' && (
+                          <div className="mb-4">
+                            {getRecommendationBadge(interview.report_data.hiringRecommendation)}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className={viewMode === 'list' ? 'flex items-center space-x-2 ml-4' : 'flex space-x-2'}>
+                        {interview.report_data?.hiringRecommendation && viewMode === 'list' && (
+                          <div className="mr-2">
+                            {getRecommendationBadge(interview.report_data.hiringRecommendation)}
+                          </div>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigate(`/report/${interview.id}`)}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          View Report
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
-          </>
-        )}
-      </div>
+          )}
+
+          {/* Load More / Pagination could go here in the future */}
+          <div className="text-center mt-8">
+            <Button variant="outline" onClick={fetchInterviews}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+          </div>
+        </>
+      )}
     </div>
   )
 }

@@ -40,7 +40,7 @@ export function LoginPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-12 flex items-center justify-center min-h-[calc(100vh-4rem)]">
+    <div className="container mx-auto px-4 py-12 flex items-center justify-center min-h-[calc(100vh-4rem)] max-w-container">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">

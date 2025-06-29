@@ -648,13 +648,11 @@ export function ReportPage() {
   // Show loading state
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-center">
-              <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
-              <p className="text-muted-foreground">Loading interview report...</p>
-            </div>
+      <div className="container mx-auto px-4 py-8 max-w-container">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading interview report...</p>
           </div>
         </div>
       </div>
@@ -664,60 +662,58 @@ export function ReportPage() {
   // Show error state
   if (error || !report) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center space-y-6">
-            <div className="mx-auto w-24 h-24 bg-red-100 rounded-full flex items-center justify-center">
-              <XCircle className="h-12 w-12 text-red-600" />
-            </div>
-            
-            <div className="space-y-2">
-              <h1 className="text-2xl font-bold text-gray-900">Report Not Found</h1>
-              <p className="text-gray-600 max-w-md mx-auto">
-                {error || 'The interview report you\'re looking for could not be found or you do not have permission to view it.'}
-              </p>
-            </div>
+      <div className="container mx-auto px-4 py-8 max-w-container">
+        <div className="text-center space-y-6">
+          <div className="mx-auto w-24 h-24 bg-red-100 rounded-full flex items-center justify-center">
+            <XCircle className="h-12 w-12 text-red-600" />
+          </div>
+          
+          <div className="space-y-2">
+            <h1 className="text-2xl font-bold text-gray-900">Report Not Found</h1>
+            <p className="text-gray-600 max-w-md mx-auto">
+              {error || 'The interview report you\'re looking for could not be found or you do not have permission to view it.'}
+            </p>
+          </div>
 
-            <Alert variant="destructive" className="max-w-md mx-auto">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>
-                {error || 'Report not found or access denied'}
-              </AlertDescription>
-            </Alert>
-            
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              {id && id !== 'error' && isValidUUID(id) && (
-                <Button
-                  variant="outline"
-                  onClick={retryFetchReport}
-                  className="flex items-center space-x-2"
-                >
-                  <RefreshCw className="h-4 w-4" />
-                  <span>Try Again</span>
-                </Button>
-              )}
-              <Button variant="outline" asChild>
-                <Link to="/?tab=past-interviews">
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back to Reports
-                </Link>
+          <Alert variant="destructive" className="max-w-md mx-auto">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              {error || 'Report not found or access denied'}
+            </AlertDescription>
+          </Alert>
+          
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            {id && id !== 'error' && isValidUUID(id) && (
+              <Button
+                variant="outline"
+                onClick={retryFetchReport}
+                className="flex items-center space-x-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                <span>Try Again</span>
               </Button>
-              <Button asChild>
-                <Link to="/">
-                  <Home className="mr-2 h-4 w-4" />
-                  Return Home
-                </Link>
-              </Button>
-            </div>
+            )}
+            <Button variant="outline" asChild>
+              <Link to="/?tab=past-interviews">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Reports
+              </Link>
+            </Button>
+            <Button asChild>
+              <Link to="/">
+                <Home className="mr-2 h-4 w-4" />
+                Return Home
+              </Link>
+            </Button>
+          </div>
 
-            <div className="text-sm text-gray-500 space-y-1">
-              <p>If you believe this is an error, please:</p>
-              <ul className="list-disc list-inside space-y-1">
-                <li>Check that the URL is correct</li>
-                <li>Make sure you're logged in with the correct account</li>
-                <li>Verify that the interview was completed successfully</li>
-              </ul>
-            </div>
+          <div className="text-sm text-gray-500 space-y-1">
+            <p>If you believe this is an error, please:</p>
+            <ul className="list-disc list-inside space-y-1">
+              <li>Check that the URL is correct</li>
+              <li>Make sure you're logged in with the correct account</li>
+              <li>Verify that the interview was completed successfully</li>
+            </ul>
           </div>
         </div>
       </div>
@@ -725,115 +721,113 @@ export function ReportPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-4">
-              <Button variant="outline" size="sm" asChild>
-                <Link to="/?tab=past-interviews">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Reports
-                </Link>
-              </Button>
-              <Badge variant="outline" className="flex items-center space-x-1">
-                <FileText className="h-3 w-3" />
-                <span>Report ID: {id}</span>
-              </Badge>
+    <div className="container mx-auto px-4 py-8 max-w-container">
+      {/* Header */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-4">
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/?tab=past-interviews">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Reports
+              </Link>
+            </Button>
+            <Badge variant="outline" className="flex items-center space-x-1">
+              <FileText className="h-3 w-3" />
+              <span>Report ID: {id}</span>
+            </Badge>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Button variant="outline" size="sm" className="flex items-center space-x-1">
+              <Download className="h-4 w-4" />
+              <span>Download PDF</span>
+            </Button>
+            <Button asChild size="sm">
+              <Link to="/">
+                <Home className="mr-2 h-4 w-4" />
+                New Interview
+              </Link>
+            </Button>
+          </div>
+        </div>
+        
+        <h1 className="text-3xl font-bold mb-2">Interview Performance Report</h1>
+        <p className="text-muted-foreground">
+          Comprehensive analysis of your interview performance with actionable insights
+        </p>
+      </div>
+
+      {/* Show warning if there was an error during interview completion */}
+      {interviewError && (
+        <Alert className="mb-8">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            There was an issue generating the complete report. Some data may be missing or incomplete.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Interview Metadata */}
+      <Card className="mb-8">
+        <CardContent className="pt-6">
+          <div className="grid md:grid-cols-4 gap-4">
+            <div className="flex items-center space-x-2">
+              <User className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-medium">{user?.email}</p>
+                <p className="text-xs text-muted-foreground">Candidate</p>
+              </div>
             </div>
             <div className="flex items-center space-x-2">
-              <Button variant="outline" size="sm" className="flex items-center space-x-1">
-                <Download className="h-4 w-4" />
-                <span>Download PDF</span>
-              </Button>
-              <Button asChild size="sm">
-                <Link to="/">
-                  <Home className="mr-2 h-4 w-4" />
-                  New Interview
-                </Link>
-              </Button>
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-medium">{new Date().toLocaleDateString()}</p>
+                <p className="text-xs text-muted-foreground">Interview Date</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-medium">{duration} minutes</p>
+                <p className="text-xs text-muted-foreground">Duration</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Award className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-medium">{report.confidenceLevel || 85}%</p>
+                <p className="text-xs text-muted-foreground">Confidence Level</p>
+              </div>
             </div>
           </div>
-          
-          <h1 className="text-3xl font-bold mb-2">Interview Performance Report</h1>
-          <p className="text-muted-foreground">
-            Comprehensive analysis of your interview performance with actionable insights
-          </p>
-        </div>
+        </CardContent>
+      </Card>
 
-        {/* Show warning if there was an error during interview completion */}
-        {interviewError && (
-          <Alert className="mb-8">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              There was an issue generating the complete report. Some data may be missing or incomplete.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Interview Metadata */}
-        <Card className="mb-8">
-          <CardContent className="pt-6">
-            <div className="grid md:grid-cols-4 gap-4">
-              <div className="flex items-center space-x-2">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <div>
-                  <p className="text-sm font-medium">{user?.email}</p>
-                  <p className="text-xs text-muted-foreground">Candidate</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <div>
-                  <p className="text-sm font-medium">{new Date().toLocaleDateString()}</p>
-                  <p className="text-xs text-muted-foreground">Interview Date</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <div>
-                  <p className="text-sm font-medium">{duration} minutes</p>
-                  <p className="text-xs text-muted-foreground">Duration</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Award className="h-4 w-4 text-muted-foreground" />
-                <div>
-                  <p className="text-sm font-medium">{report.confidenceLevel || 85}%</p>
-                  <p className="text-xs text-muted-foreground">Confidence Level</p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Report Tabs */}
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="technical">Technical</TabsTrigger>
-            <TabsTrigger value="behavioral">Behavioral</TabsTrigger>
-            <TabsTrigger value="detailed">Detailed</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="overview">
-            <OverviewTab report={report} />
-          </TabsContent>
-          
-          <TabsContent value="technical">
-            <TechnicalTab report={report} />
-          </TabsContent>
-          
-          <TabsContent value="behavioral">
-            <BehavioralTab report={report} />
-          </TabsContent>
-          
-          <TabsContent value="detailed">
-            <DetailedTab report={report} />
-          </TabsContent>
-        </Tabs>
-      </div>
+      {/* Report Tabs */}
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="technical">Technical</TabsTrigger>
+          <TabsTrigger value="behavioral">Behavioral</TabsTrigger>
+          <TabsTrigger value="detailed">Detailed</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="overview">
+          <OverviewTab report={report} />
+        </TabsContent>
+        
+        <TabsContent value="technical">
+          <TechnicalTab report={report} />
+        </TabsContent>
+        
+        <TabsContent value="behavioral">
+          <BehavioralTab report={report} />
+        </TabsContent>
+        
+        <TabsContent value="detailed">
+          <DetailedTab report={report} />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
