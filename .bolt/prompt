@@ -1,0 +1,126 @@
+📂 PitchPerfect – AI Context File - This should serve as overall project context, however the PROMPT given by the user should ALWAYS take precedence if there is conflicting information. 
+
+🔥 Project Overview
+- Name: PitchPerfect
+- Type: AI-powered interview preparation platform
+- Goal: Deliver dynamic, lifelike interview simulations using AI avatars, voice/video, and personalized preparation.
+- Built For: World's Largest Hackathon presented by Bolt
+
+🧩 Core MVP Flow
+1. User pastes a job listing URL
+2. Uploads CV/resume (optional cover letter)
+3. Selects “Interview” mode (Apply = disabled in MVP)
+4. Chooses interviewer persona and interview type/stage
+5. Receives AI-generated prep tips as visual cards
+6. Enters interview session with real-time AI avatar:
+   - Avatar is powered by Tavus CVI stack
+   - Conducts STAR-style interview, adapts in real time
+   - User responds via voice
+7. Post-interview: user receives feedback report with:
+   - Performance scores
+   - Strengths & improvement areas
+   - Transcript + highlights
+
+👥 Target User Persona
+Primary: Mid-Career Professionals
+- 5–15 years experience in SaaS/Tech roles
+- Value efficiency, personalization, realism
+- Roles: TAM, CSM, PMM, RevOps, Solutions Engineering
+
+Secondary: Junior Professionals / New Grads
+- Supported in future roadmap
+
+🏗 Tech Stack
+
+Frontend
+- Framework: React, Vite
+- Styling: Tailwind CSS, shadcn/ui, Lucide icons
+
+AI/LLM
+- Main Model: OpenAI GPT-4o (all user-facing logic)
+- Others for internal tooling: Claude (judgment), Gemini + Stitch (multimodal Figma design)
+
+Voice/Video
+- Avatar: Tavus (CVI, Raven-0, Replica, Layers/Modes)
+- Streaming: LiveKit (WebRTC)
+- Fallback: OpenAI Whisper for speech-to-text
+
+Infra
+- Hosting: Vercel or Bolt
+- Storage: Supabase (recordings, user data)
+
+🧠 AI Prompting Strategy
+User-Facing Prompts
+- GPT-4o for:
+  - Persona-driven interview agent (STAR, real-time)
+  - Job-tailored prep card generation
+  - Feedback synthesis using structured outputs
+
+Internal Prompts
+- Claude for:
+  - Long-context analysis (e.g. resume + job spec)
+  - Feedback reports (scored, structured)
+- Gemini (Stitch) for:
+  - Figma layout generation
+  - Design critique & responsive variants
+- Bolt.new for:
+  - UI scaffolding, component generation
+  - Edge case handling and error fixes
+
+Prompt Design Best Practices
+- Use system messages to establish role/persona
+- All prompts are templated with variable injection
+  - e.g. [JOB_TITLE], [RESUME_BULLETS], [INTERVIEW_TRANSCRIPT]
+- Prompts are RAG-ready and zero/few-shot compatible
+- Clear formatting, JSON schemas, and scoped instructions
+
+🧪 MVP Feedback Report (Claude)
+- JSON format with:
+  - Overall score (1–5)
+  - Scores by dimension: Communication, Technical, Alignment
+  - Strengths and weaknesses
+  - Summary comment
+
+🎨 AI-Driven UI Design
+  - Component design
+  - Responsive layout
+  - Color + type hierarchy
+  - Interaction polish
+
+📅 30-Day Execution Timeline (Key Milestones)
+
+Week 1
+- Finalize architecture, personas, onboarding flow
+- Scaffold base UI (Next.js + shadcn/ui)
+- Implement job URL + CV upload
+
+Week 2
+- Prep card generation via GPT-4o
+- Set up LiveKit room & Tavus avatar pipeline
+- Simulate first interviews (text-only)
+
+Week 3
+- Integrate Tavus Full CVI avatar into session
+- Live Q&A flow with GPT-4o
+- Claude feedback report generation
+
+Week 4
+- Finalize UI polish + mobile responsiveness
+- Assemble highlight reels (Whisper + Tavus API)
+- Record demo video and submit to Bolt
+
+🧠 Competitive Differentiators
+| Interviewing.io | Instant AI avatars; persona realism  |
+| Pramp           | Consistent experience; expert feedback |
+| Google Warmup   | Multimodal interaction; STAR coaching|
+
+🧬 Advanced Features (Roadmap / Speculative)
+- Highlight reel from interview (Whisper + video splice)
+- Vibe meter from Tavus emotion signals
+- “Persona Roulette” – change interviewer style mid-interview
+- LinkedIn integration for social sharing of results
+
+🔐 Safety, Privacy, & Guardrails
+- All prompts use clearly delimited injection zones
+- Voice input is optional; fallback to text mode
+- Transcripts are anonymized for feedback processing
