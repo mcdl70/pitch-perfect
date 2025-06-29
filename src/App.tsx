@@ -8,6 +8,7 @@ import { LoginPage } from '@/pages/LoginPage'
 import { SignUpPage } from '@/pages/SignUpPage'
 import { InterviewPage } from '@/pages/InterviewPage'
 import { ReportPage } from '@/pages/ReportPage'
+import { ReportsPage } from '@/pages/ReportsPage'
 import { Toaster } from '@/components/ui/sonner'
 import { ThemeProvider } from '@/components/theme-provider'
 
@@ -26,6 +27,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <InterviewPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/reports" 
+                element={
+                  <ProtectedRoute>
+                    <ReportsPage />
                   </ProtectedRoute>
                 } 
               />

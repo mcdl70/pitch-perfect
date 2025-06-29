@@ -60,7 +60,7 @@ export function Layout({ children }: LayoutProps) {
                   Interview
                 </Link>
                 <Link 
-                  to="/?tab=past-interviews" 
+                  to="/reports" 
                   className="text-sm font-medium transition-colors hover:text-primary"
                 >
                   Reports
@@ -98,9 +98,9 @@ export function Layout({ children }: LayoutProps) {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link to="/?tab=past-interviews" className="cursor-pointer">
+                    <Link to="/reports" className="cursor-pointer">
                       <FileText className="mr-2 h-4 w-4" />
-                      Past Reports
+                      All Reports
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
