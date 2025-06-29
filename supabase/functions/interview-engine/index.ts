@@ -8,12 +8,12 @@ const corsHeaders = {
 
 interface InterviewRequest {
   jobAnalysis: {
-    keySkills: string[]
-    requiredExperience: string[]
-    companyInfo: string
-    roleResponsibilities: string[]
-    interviewFocus: string[]
-    difficulty: string
+    keySkills?: string[]
+    requiredExperience?: string[]
+    companyInfo?: string
+    roleResponsibilities?: string[]
+    interviewFocus?: string[]
+    difficulty?: string
   }
   candidateResponse?: string
   conversationHistory?: Array<{
@@ -34,6 +34,19 @@ interface InterviewResponse {
   timeAllocation: number
   nextStage?: string
   interviewComplete?: boolean
+}
+
+// Helper function to safely join arrays with fallback
+const safeJoin = (arr: string[] | undefined | null, separator: string = ', ', fallback: string = 'Not specified'): string => {
+  if (!arr || !Array.isArray(arr) || arr.length === 0) {
+    return fallback
+  }
+  return arr.join(separator)
+}
+
+// Helper function to safely get string value
+const safeString = (value: string | undefined | null, fallback: string = 'Not specified'): string => {
+  return value && typeof value === 'string' ? value : fallback
 }
 
 serve(async (req) => {
@@ -133,6 +146,21 @@ IMPORTANT GUIDELINES:
       conversationContext += `\nCANDIDATE'S LATEST RESPONSE: ${candidateResponse}\n`
     }
 
+    // Safely construct the position details with fallbacks
+    const positionDetails = `POSITION DETAILS:
+Key Skills Required: ${safeJoin(jobAnalysis.keySkills, ', ', 'General skills assessment')}
+Required Experience: ${safeJoin(jobAnalysis.requiredExperience, ', ', 'Experience level to be determined')}
+Company Info: ${safeString(jobAnalysis.companyInfo, 'Company details not provided')}
+Role Responsibilities: ${safeJoin(jobAnalysis.roleResponsibilities, ', ', 'Standard role responsibilities')}
+Interview Focus Areas: ${safeJoin(jobAnalysis.interviewFocus, ', ', 'Comprehensive assessment')}
+Position Level: ${safeString(jobAnalysis.difficulty, 'mid-level')}
+
+CURRENT INTERVIEW STAGE: ${interviewStage}
+
+${conversationContext}
+
+Please provide the next interview question as a JSON response. Consider the conversation flow, candidate's responses so far, and ensure we're progressing appropriately through the interview stages.`
+
     // Prepare the API request
     const apiRequest = {
       model: 'gpt-4',
@@ -143,19 +171,7 @@ IMPORTANT GUIDELINES:
         },
         {
           role: 'user',
-          content: `POSITION DETAILS:
-Key Skills Required: ${jobAnalysis.keySkills.join(', ')}
-Required Experience: ${jobAnalysis.requiredExperience.join(', ')}
-Company Info: ${jobAnalysis.companyInfo}
-Role Responsibilities: ${jobAnalysis.roleResponsibilities.join(', ')}
-Interview Focus Areas: ${jobAnalysis.interviewFocus.join(', ')}
-Position Level: ${jobAnalysis.difficulty}
-
-CURRENT INTERVIEW STAGE: ${interviewStage}
-
-${conversationContext}
-
-Please provide the next interview question as a JSON response. Consider the conversation flow, candidate's responses so far, and ensure we're progressing appropriately through the interview stages.`
+          content: positionDetails
         }
       ],
       temperature: 0.4,
