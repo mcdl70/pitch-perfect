@@ -8,13 +8,12 @@ import { Progress } from '@/components/ui/progress'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { ChatInput } from '@/components/ChatInput'
 import { 
   Play, 
-  Send, 
   User, 
   Bot, 
   Clock, 
@@ -326,7 +325,8 @@ function ChatInterface({ jobAnalysis, config, onInterviewComplete }: ChatInterfa
     }
   }
 
-  const sendMessage = async () => {
+  const sendMessage = async (e: React.FormEvent) => {
+    e.preventDefault()
     if (!currentMessage.trim() || isLoading) return
 
     const candidateMessage: Message = {
@@ -491,19 +491,6 @@ function ChatInterface({ jobAnalysis, config, onInterviewComplete }: ChatInterfa
     }
   }
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      sendMessage()
-    }
-  }
-
-  const getStageProgress = () => {
-    const stages = ['start', 'technical', 'behavioral', 'situational', 'closing']
-    const currentIndex = stages.indexOf(interviewStage)
-    return ((currentIndex + 1) / stages.length) * 100
-  }
-
   const retryLastMessage = () => {
     if (messages.length > 0) {
       const lastCandidateMessage = [...messages].reverse().find(msg => msg.role === 'candidate')
@@ -512,6 +499,12 @@ function ChatInterface({ jobAnalysis, config, onInterviewComplete }: ChatInterfa
         setError('')
       }
     }
+  }
+
+  const getStageProgress = () => {
+    const stages = ['start', 'technical', 'behavioral', 'situational', 'closing']
+    const currentIndex = stages.indexOf(interviewStage)
+    return ((currentIndex + 1) / stages.length) * 100
   }
 
   return (
@@ -631,25 +624,14 @@ function ChatInterface({ jobAnalysis, config, onInterviewComplete }: ChatInterfa
           
           {/* Input Area */}
           <div className="p-4">
-            <div className="flex space-x-2">
-              <Textarea
-                placeholder="Type your response here... (Press Enter to send, Shift+Enter for new line)"
-                value={currentMessage}
-                onChange={(e) => setCurrentMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                disabled={isLoading}
-                rows={2}
-                className="flex-1 resize-none"
-              />
-              <Button 
-                onClick={sendMessage}
-                disabled={!currentMessage.trim() || isLoading}
-                size="sm"
-                className="self-end"
-              >
-                <Send className="h-4 w-4" />
-              </Button>
-            </div>
+            <ChatInput
+              input={currentMessage}
+              setInput={setCurrentMessage}
+              handleSubmit={sendMessage}
+              isLoading={isLoading}
+              disabled={false}
+              placeholder="Type your response here or use the microphone to record your answer..."
+            />
           </div>
         </CardContent>
       </Card>
