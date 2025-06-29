@@ -94,6 +94,12 @@ interface FeedbackReport {
   detailedFeedback: DetailedFeedback[]
 }
 
+// UUID validation function
+function isValidUUID(uuid: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+  return uuidRegex.test(uuid)
+}
+
 function ScoreCard({ title, score, maxScore = 10, description, icon: Icon, trend }: {
   title: string
   score: number
@@ -575,6 +581,14 @@ export function ReportPage() {
   const interviewError = location.state?.error
 
   useEffect(() => {
+    // Validate UUID format first
+    if (id && id !== 'error') {
+      if (!isValidUUID(id)) {
+        setError('Invalid report ID format. Please check the URL and try again.')
+        return
+      }
+    }
+
     // If we don't have report data and have a valid ID, try to fetch from database
     if (!report && id && id !== 'error' && user) {
       fetchReportData()
@@ -584,6 +598,11 @@ export function ReportPage() {
   }, [id, report, user, interviewError])
 
   const fetchReportData = async () => {
+    if (!id || !isValidUUID(id)) {
+      setError('Invalid report ID format. Please check the URL and try again.')
+      return
+    }
+
     setLoading(true)
     setError('')
 
@@ -596,7 +615,10 @@ export function ReportPage() {
         .single()
 
       if (fetchError) {
-        throw new Error('Interview not found or access denied')
+        if (fetchError.code === 'PGRST116') {
+          throw new Error('Interview report not found or you do not have permission to view it.')
+        }
+        throw new Error('Failed to load interview report. Please try again.')
       }
 
       if (data) {
@@ -605,11 +627,11 @@ export function ReportPage() {
         setDuration(data.transcript?.duration || 25)
         setConfig(data.transcript?.config || null)
       } else {
-        throw new Error('No interview data found')
+        throw new Error('Interview report not found.')
       }
     } catch (err) {
       console.error('Error fetching report:', err)
-      setError('Report not found or you do not have permission to view it.')
+      setError(err instanceof Error ? err.message : 'Failed to load interview report. Please try again.')
       toast.error('Failed to load interview report')
     } finally {
       setLoading(false)
@@ -617,7 +639,7 @@ export function ReportPage() {
   }
 
   const retryFetchReport = () => {
-    if (id && id !== 'error') {
+    if (id && id !== 'error' && isValidUUID(id)) {
       fetchReportData()
     }
   }
@@ -642,32 +664,53 @@ export function ReportPage() {
   if (error || !report) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto">
-          <Alert variant="destructive" className="mb-8">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription className="flex items-center justify-between">
-              <span>{error || 'Report not found or you do not have permission to view it.'}</span>
-              {id && id !== 'error' && (
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center space-y-6">
+            <div className="mx-auto w-24 h-24 bg-red-100 rounded-full flex items-center justify-center">
+              <XCircle className="h-12 w-12 text-red-600" />
+            </div>
+            
+            <div className="space-y-2">
+              <h1 className="text-2xl font-bold text-gray-900">Report Not Found</h1>
+              <p className="text-gray-600 max-w-md mx-auto">
+                {error || 'The interview report you\'re looking for could not be found or you do not have permission to view it.'}
+              </p>
+            </div>
+
+            <Alert variant="destructive" className="max-w-md mx-auto">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                {error || 'Report not found or access denied'}
+              </AlertDescription>
+            </Alert>
+            
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              {id && id !== 'error' && isValidUUID(id) && (
                 <Button
                   variant="outline"
-                  size="sm"
                   onClick={retryFetchReport}
-                  className="ml-2"
+                  className="flex items-center space-x-2"
                 >
-                  <RefreshCw className="h-4 w-4 mr-1" />
-                  Retry
+                  <RefreshCw className="h-4 w-4" />
+                  <span>Try Again</span>
                 </Button>
               )}
-            </AlertDescription>
-          </Alert>
-          
-          <div className="text-center">
-            <Button asChild>
-              <Link to="/">
-                <Home className="mr-2 h-4 w-4" />
-                Return Home
-              </Link>
-            </Button>
+              <Button asChild>
+                <Link to="/">
+                  <Home className="mr-2 h-4 w-4" />
+                  Return Home
+                </Link>
+              </Button>
+            </div>
+
+            <div className="text-sm text-gray-500 space-y-1">
+              <p>If you believe this is an error, please:</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>Check that the URL is correct</li>
+                <li>Make sure you're logged in with the correct account</li>
+                <li>Verify that the interview was completed successfully</li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
