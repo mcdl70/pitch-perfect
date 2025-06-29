@@ -49,6 +49,24 @@ const safeString = (value: string | undefined | null, fallback: string = 'Not sp
   return value && typeof value === 'string' ? value : fallback
 }
 
+// Helper function to extract JSON from OpenAI response
+const extractJsonFromResponse = (content: string): string => {
+  // First, try to find JSON wrapped in code blocks
+  const codeBlockMatch = content.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/i)
+  if (codeBlockMatch) {
+    return codeBlockMatch[1].trim()
+  }
+  
+  // If no code blocks, look for JSON object boundaries
+  const jsonMatch = content.match(/\{[\s\S]*\}/)
+  if (jsonMatch) {
+    return jsonMatch[0].trim()
+  }
+  
+  // If neither pattern matches, return the original content
+  return content.trim()
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -114,7 +132,7 @@ EVALUATION CRITERIA:
 - Leadership potential (for senior roles)
 
 RESPONSE FORMAT:
-Always respond with a JSON object containing:
+You must respond with ONLY a valid JSON object. Do not include any markdown formatting, code blocks, or additional text. The JSON should contain:
 - question: The next interview question
 - questionType: Category of question
 - expectedAnswerPoints: Key points a strong answer should include
@@ -131,7 +149,8 @@ IMPORTANT GUIDELINES:
 - Be inclusive and avoid bias
 - Adapt to candidate's experience level
 - Build rapport while maintaining professionalism
-- End interviews gracefully with clear next steps`
+- End interviews gracefully with clear next steps
+- RESPOND WITH ONLY VALID JSON - NO MARKDOWN OR EXTRA TEXT`
 
     // Build conversation context
     let conversationContext = ''
@@ -159,7 +178,7 @@ CURRENT INTERVIEW STAGE: ${interviewStage}
 
 ${conversationContext}
 
-Please provide the next interview question as a JSON response. Consider the conversation flow, candidate's responses so far, and ensure we're progressing appropriately through the interview stages.`
+Please provide the next interview question as a JSON response. Consider the conversation flow, candidate's responses so far, and ensure we're progressing appropriately through the interview stages. Remember: respond with ONLY valid JSON, no markdown or additional text.`
 
     // Prepare the API request
     const apiRequest = {
@@ -201,13 +220,24 @@ Please provide the next interview question as a JSON response. Consider the conv
       throw new Error('No interview content received from OpenAI')
     }
 
+    // Extract JSON from the response content
+    const jsonContent = extractJsonFromResponse(interviewContent)
+    console.log('Extracted JSON content:', jsonContent)
+
     // Parse the JSON response from OpenAI
     let interviewResult: InterviewResponse
     try {
-      interviewResult = JSON.parse(interviewContent)
+      interviewResult = JSON.parse(jsonContent)
     } catch (parseError) {
-      console.error('Failed to parse OpenAI response as JSON:', interviewContent)
-      throw new Error('Invalid JSON response from interview engine')
+      console.error('Failed to parse OpenAI response as JSON:', jsonContent)
+      console.error('Original response:', interviewContent)
+      throw new Error(`Invalid JSON response from interview engine: ${parseError.message}`)
+    }
+
+    // Validate that the parsed result has required fields
+    if (!interviewResult.question || !interviewResult.questionType) {
+      console.error('Parsed JSON missing required fields:', interviewResult)
+      throw new Error('Interview response missing required fields')
     }
 
     return new Response(
