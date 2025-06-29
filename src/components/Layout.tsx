@@ -37,17 +37,19 @@ export function Layout({ children }: LayoutProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+      <header className="sticky top-0 z-50 border-b border-neutral-200 bg-background/95 nav-backdrop">
+        <div className="container mx-auto px-4 h-[64px] flex items-center justify-between max-w-container">
           <Link to="/" className="flex items-center space-x-2">
-            <Shield className="h-6 w-6" />
-            <span className="font-bold text-xl">PitchPerfect</span>
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <Shield className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <span className="font-semibold text-xl text-foreground">PitchPerfect</span>
           </Link>
 
-          <nav className="hidden md:flex items-center space-x-6">
+          <nav className="hidden md:flex items-center space-x-32px">
             <Link 
               to="/" 
-              className="text-sm font-medium transition-colors hover:text-primary"
+              className="text-caption font-medium transition-colors hover:text-primary text-neutral-700"
             >
               Home
             </Link>
@@ -55,13 +57,13 @@ export function Layout({ children }: LayoutProps) {
               <>
                 <Link 
                   to="/interview" 
-                  className="text-sm font-medium transition-colors hover:text-primary"
+                  className="text-caption font-medium transition-colors hover:text-primary text-neutral-700"
                 >
                   Interview
                 </Link>
                 <Link 
                   to="/reports" 
-                  className="text-sm font-medium transition-colors hover:text-primary"
+                  className="text-caption font-medium transition-colors hover:text-primary text-neutral-700"
                 >
                   Reports
                 </Link>
@@ -77,7 +79,7 @@ export function Layout({ children }: LayoutProps) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-8 w-8">
-                      <AvatarFallback>
+                      <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                         {getUserInitials(user.email!)}
                       </AvatarFallback>
                     </Avatar>
@@ -115,7 +117,7 @@ export function Layout({ children }: LayoutProps) {
               </DropdownMenu>
             ) : (
               <div className="flex items-center space-x-2">
-                <Button variant="ghost" asChild>
+                <Button variant="outline" asChild>
                   <Link to="/login">Login</Link>
                 </Button>
                 <Button asChild>

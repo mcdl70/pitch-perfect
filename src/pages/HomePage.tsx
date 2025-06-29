@@ -178,13 +178,13 @@ function JobInputForm({ onJobAnalyzed }: JobInputFormProps) {
   const isFormValid = jobDescription.trim().length >= 50
 
   return (
-    <Card className="w-full max-w-4xl mx-auto">
+    <Card variant="feature" className="w-full max-w-4xl mx-auto">
       <CardHeader className="text-center">
-        <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mb-4">
+        <div className="mx-auto w-16 h-16 bg-gradient-to-br from-primary to-accent-blue rounded-2xl flex items-center justify-center mb-4">
           <Briefcase className="h-8 w-8 text-white" />
         </div>
-        <CardTitle className="text-2xl">Start Your Interview Preparation</CardTitle>
-        <CardDescription className="text-lg">
+        <CardTitle className="text-h1">Start Your Interview Preparation</CardTitle>
+        <CardDescription className="text-body-large">
           Paste a job posting and upload your CV to get personalized interview practice
         </CardDescription>
       </CardHeader>
@@ -199,7 +199,7 @@ function JobInputForm({ onJobAnalyzed }: JobInputFormProps) {
         <div className="grid md:grid-cols-2 gap-6">
           <div className="space-y-4">
             <div>
-              <Label htmlFor="jobUrl" className="text-sm font-medium">Job Posting URL (Optional)</Label>
+              <Label htmlFor="jobUrl" className="text-caption font-medium">Job Posting URL (Optional)</Label>
               <Input
                 id="jobUrl"
                 placeholder="https://company.com/careers/job-posting"
@@ -210,7 +210,7 @@ function JobInputForm({ onJobAnalyzed }: JobInputFormProps) {
             </div>
 
             <div>
-              <Label htmlFor="jobTitle" className="text-sm font-medium">Job Title</Label>
+              <Label htmlFor="jobTitle" className="text-caption font-medium">Job Title</Label>
               <Input
                 id="jobTitle"
                 placeholder="e.g. Senior Software Engineer"
@@ -221,7 +221,7 @@ function JobInputForm({ onJobAnalyzed }: JobInputFormProps) {
             </div>
 
             <div>
-              <Label htmlFor="companyName" className="text-sm font-medium">Company Name</Label>
+              <Label htmlFor="companyName" className="text-caption font-medium">Company Name</Label>
               <Input
                 id="companyName"
                 placeholder="e.g. TechCorp Inc."
@@ -234,7 +234,7 @@ function JobInputForm({ onJobAnalyzed }: JobInputFormProps) {
 
           <div className="space-y-4">
             <div>
-              <Label htmlFor="cvUpload" className="text-sm font-medium">Upload CV/Resume (Optional)</Label>
+              <Label htmlFor="cvUpload" className="text-caption font-medium">Upload CV/Resume (Optional)</Label>
               <div className="mt-1">
                 <Input
                   id="cvUpload"
@@ -242,7 +242,7 @@ function JobInputForm({ onJobAnalyzed }: JobInputFormProps) {
                   accept=".pdf,.doc,.docx"
                   onChange={handleFileUpload}
                   disabled={isAnalyzing}
-                  className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                  className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary-hover"
                 />
                 {cvFile && (
                   <p className="text-sm text-muted-foreground mt-2 flex items-center">
@@ -254,7 +254,7 @@ function JobInputForm({ onJobAnalyzed }: JobInputFormProps) {
             </div>
 
             <div>
-              <Label htmlFor="coverLetter" className="text-sm font-medium">Cover Letter (Optional)</Label>
+              <Label htmlFor="coverLetter" className="text-caption font-medium">Cover Letter (Optional)</Label>
               <Textarea
                 id="coverLetter"
                 placeholder="Paste your cover letter here..."
@@ -268,7 +268,7 @@ function JobInputForm({ onJobAnalyzed }: JobInputFormProps) {
         </div>
 
         <div>
-          <Label htmlFor="jobDescription" className="text-sm font-medium">
+          <Label htmlFor="jobDescription" className="text-caption font-medium">
             Job Description *
             <span className="text-xs text-muted-foreground ml-2">
               ({jobDescription.length}/50 characters minimum)
@@ -281,10 +281,10 @@ function JobInputForm({ onJobAnalyzed }: JobInputFormProps) {
             onChange={(e) => setJobDescription(e.target.value)}
             disabled={isAnalyzing}
             rows={8}
-            className={`mt-1 ${jobDescription.length > 0 && jobDescription.length < 50 ? 'border-orange-300 focus:border-orange-500' : ''}`}
+            className={`mt-1 ${jobDescription.length > 0 && jobDescription.length < 50 ? 'border-accent-orange focus:border-accent-orange' : ''}`}
           />
           {jobDescription.length > 0 && jobDescription.length < 50 && (
-            <p className="text-sm text-orange-600 mt-1">
+            <p className="text-sm text-accent-orange mt-1">
               Please provide a more detailed job description (at least 50 characters)
             </p>
           )}
@@ -361,7 +361,7 @@ function PastInterviews() {
 
   const getScoreColor = (score: number) => {
     if (score >= 8) return 'text-green-600 bg-green-50 border-green-200'
-    if (score >= 6) return 'text-yellow-600 bg-yellow-50 border-yellow-200'
+    if (score >= 6) return 'text-accent-yellow bg-yellow-50 border-yellow-200'
     return 'text-red-600 bg-red-50 border-red-200'
   }
 
@@ -385,7 +385,7 @@ function PastInterviews() {
 
   if (loading) {
     return (
-      <Card className="w-full max-w-4xl mx-auto">
+      <Card variant="feature" className="w-full max-w-4xl mx-auto">
         <CardContent className="pt-6">
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
@@ -400,7 +400,7 @@ function PastInterviews() {
 
   if (error) {
     return (
-      <Card className="w-full max-w-4xl mx-auto">
+      <Card variant="feature" className="w-full max-w-4xl mx-auto">
         <CardContent className="pt-6">
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
@@ -424,7 +424,7 @@ function PastInterviews() {
 
   if (interviews.length === 0) {
     return (
-      <Card className="w-full max-w-4xl mx-auto">
+      <Card variant="feature" className="w-full max-w-4xl mx-auto">
         <CardContent className="pt-6">
           <div className="text-center py-12">
             <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
@@ -447,7 +447,7 @@ function PastInterviews() {
   return (
     <div className="w-full max-w-4xl mx-auto space-y-6">
       <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold mb-2">Your Interview History</h2>
+        <h2 className="text-h1 mb-2">Your Interview History</h2>
         <p className="text-muted-foreground">
           Review your past interview performances and track your progress
         </p>
@@ -456,7 +456,7 @@ function PastInterviews() {
       <ScrollArea className="h-[600px]">
         <div className="space-y-4 pr-4">
           {interviews.map((interview) => (
-            <Card key={interview.id} className="hover:shadow-md transition-shadow cursor-pointer">
+            <Card key={interview.id} variant="pricing">
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
@@ -547,20 +547,20 @@ export function HomePage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-12">
+    <div className="container mx-auto px-4 py-80px max-w-container">
       {/* Hero Section */}
-      <div className="text-center mb-16">
-        <Badge variant="outline" className="mb-4 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+      <div className="text-left mb-16 max-w-[50%]">
+        <Badge variant="outline" className="mb-4 bg-primary-light border-primary/20">
           <Sparkles className="h-3 w-3 mr-1" />
           AI-Powered Interview Prep
         </Badge>
-        <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
+        <h1 className="text-hero tracking-tight mb-6">
           Master Your Next
-          <span className="block bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <span className="block bg-gradient-to-r from-primary to-accent-blue bg-clip-text text-transparent">
             Job Interview
           </span>
         </h1>
-        <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
+        <p className="text-body-large text-muted-foreground max-w-3xl mb-8">
           PitchPerfect uses advanced AI to analyze job postings, create personalized interview 
           simulations, and provide detailed feedback to help you land your dream job.
         </p>
@@ -573,7 +573,7 @@ export function HomePage() {
             <CardContent className="pt-6">
               <div className="flex items-center space-x-2">
                 <CheckCircle className="h-5 w-5 text-green-600" />
-                <span className="text-sm font-medium">Welcome back, {user.email}</span>
+                <span className="text-caption font-medium">Welcome back, {user.email}</span>
               </div>
             </CardContent>
           </Card>
@@ -628,27 +628,30 @@ export function HomePage() {
         </div>
       )}
 
-      {/* Features Grid */}
-      <div className="grid md:grid-cols-3 gap-8 mb-16">
-        {features.map((feature, index) => (
-          <Card key={index} className="text-center hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <div className="mx-auto w-12 h-12 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-lg flex items-center justify-center mb-4">
-                <feature.icon className="h-6 w-6 text-blue-600" />
-              </div>
-              <CardTitle className="text-xl">{feature.title}</CardTitle>
-              <CardDescription className="text-base">{feature.description}</CardDescription>
-            </CardHeader>
-          </Card>
-        ))}
+      {/* Features Grid with Gradient Background */}
+      <div className="relative">
+        <div className="absolute inset-0 bg-gradient-brand rounded-2xl opacity-10"></div>
+        <div className="relative grid md:grid-cols-3 gap-8 mb-16 p-80px">
+          {features.map((feature, index) => (
+            <Card key={index} variant="feature" className="text-center hover:shadow-lift transition-shadow">
+              <CardHeader>
+                <div className="mx-auto w-12 h-12 bg-gradient-to-br from-primary/10 to-accent-blue/10 rounded-lg flex items-center justify-center mb-4">
+                  <feature.icon className="h-6 w-6 text-primary" />
+                </div>
+                <CardTitle className="text-xl">{feature.title}</CardTitle>
+                <CardDescription className="text-base">{feature.description}</CardDescription>
+              </CardHeader>
+            </Card>
+          ))}
+        </div>
       </div>
 
       {/* Tech Stack */}
       <div className="text-center">
-        <h2 className="text-2xl font-bold mb-8">Powered by Advanced AI Technology</h2>
+        <h2 className="text-h1 mb-8">Powered by Advanced AI Technology</h2>
         <div className="flex flex-wrap justify-center gap-3">
           {['OpenAI GPT-4o', 'React', 'TypeScript', 'Supabase', 'Tailwind CSS', 'shadcn/ui'].map((tech) => (
-            <Badge key={tech} variant="secondary" className="px-4 py-2 text-sm">
+            <Badge key={tech} variant="secondary" className="px-4 py-2 text-caption">
               {tech}
             </Badge>
           ))}
