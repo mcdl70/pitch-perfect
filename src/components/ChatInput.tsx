@@ -57,16 +57,17 @@ export function ChatInput({
     
     for (const type of types) {
       if (MediaRecorder.isTypeSupported(type)) {
-        console.log('Selected MIME type:', type)
+        console.log('🎙️ [RECORDING] Selected MIME type:', type)
         return type
       }
     }
     
-    console.log('Using fallback MIME type: audio/webm')
+    console.log('🎙️ [RECORDING] Using fallback MIME type: audio/webm')
     return 'audio/webm'
   }
 
   const startRecording = async () => {
+    console.log('🎙️ [RECORDING] Starting recording process...')
     setRecordingError('')
     
     try {
@@ -75,6 +76,8 @@ export function ChatInput({
         throw new Error('Audio recording is not supported in this browser')
       }
 
+      console.log('🎙️ [RECORDING] Requesting microphone access...')
+      
       // Request microphone access with optimized constraints for speech
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
@@ -86,10 +89,12 @@ export function ChatInput({
         } 
       })
 
+      console.log('🎙️ [RECORDING] Microphone access granted, stream tracks:', stream.getTracks().length)
       streamRef.current = stream
 
       // Get supported MIME type
       const mimeType = getSupportedMimeType()
+      console.log('🎙️ [RECORDING] Final MIME type selected:', mimeType)
 
       // Create MediaRecorder instance with optimized settings
       const recorder = new MediaRecorder(stream, {
@@ -97,26 +102,46 @@ export function ChatInput({
         audioBitsPerSecond: 128000
       })
 
+      console.log('🎙️ [RECORDING] MediaRecorder created with state:', recorder.state)
+
       const chunks: Blob[] = []
 
       recorder.ondataavailable = (event) => {
+        console.log('🎙️ [RECORDING] Data available event fired:', {
+          dataSize: event.data.size,
+          dataType: event.data.type,
+          chunksCount: chunks.length + 1
+        })
+        
         if (event.data.size > 0) {
           chunks.push(event.data)
-          console.log('Audio chunk received:', event.data.size, 'bytes')
+          console.log('🎙️ [RECORDING] Audio chunk added:', event.data.size, 'bytes, total chunks:', chunks.length)
+        } else {
+          console.warn('🎙️ [RECORDING] Received empty data chunk!')
         }
       }
 
       recorder.onstop = async () => {
-        console.log('Recording stopped, processing audio...')
+        console.log('🎙️ [RECORDING] Recording stopped, processing audio...')
+        console.log('🎙️ [RECORDING] Final state:', {
+          chunksLength: chunks.length,
+          recordingTime: recordingTime,
+          totalChunkSizes: chunks.map(chunk => chunk.size),
+          streamActive: streamRef.current?.active
+        })
         
         // Stop all tracks to release microphone
         if (streamRef.current) {
-          streamRef.current.getTracks().forEach(track => track.stop())
+          streamRef.current.getTracks().forEach(track => {
+            console.log('🎙️ [RECORDING] Stopping track:', track.kind, track.readyState)
+            track.stop()
+          })
           streamRef.current = null
         }
         
         // Check if we have enough data
         if (chunks.length === 0) {
+          console.error('🎙️ [RECORDING] No chunks collected!')
           setRecordingError('No audio data recorded. Please try again.')
           return
         }
@@ -124,23 +149,28 @@ export function ChatInput({
         // Create audio blob
         const audioBlob = new Blob(chunks, { type: mimeType })
         
-        console.log('Audio blob created:', {
+        console.log('🎙️ [RECORDING] Audio blob created:', {
           size: audioBlob.size,
           type: audioBlob.type,
           chunks: chunks.length,
-          duration: recordingTime
+          duration: recordingTime,
+          chunkSizes: chunks.map(c => c.size)
         })
         
         // Check minimum requirements
         if (audioBlob.size < 1024) {
+          console.error('🎙️ [RECORDING] Audio blob too small:', audioBlob.size, 'bytes')
           setRecordingError('Recording too short or empty. Please record for at least 2 seconds.')
           return
         }
         
         if (recordingTime < 1) {
+          console.error('🎙️ [RECORDING] Recording time too short:', recordingTime, 'seconds')
           setRecordingError('Recording too short. Please record for at least 2 seconds.')
           return
         }
+        
+        console.log('🎙️ [RECORDING] Audio blob validation passed, starting transcription...')
         
         // Transcribe the audio
         await transcribeAudio(audioBlob, mimeType)
@@ -150,12 +180,25 @@ export function ChatInput({
       }
 
       recorder.onerror = (event) => {
-        console.error('MediaRecorder error:', event)
+        console.error('🎙️ [RECORDING] MediaRecorder error:', event)
         setRecordingError('Recording failed. Please try again.')
         stopRecording()
       }
 
+      recorder.onstart = () => {
+        console.log('🎙️ [RECORDING] MediaRecorder started successfully')
+      }
+
+      recorder.onpause = () => {
+        console.log('🎙️ [RECORDING] MediaRecorder paused')
+      }
+
+      recorder.onresume = () => {
+        console.log('🎙️ [RECORDING] MediaRecorder resumed')
+      }
+
       // Start recording with frequent data collection
+      console.log('🎙️ [RECORDING] Starting MediaRecorder...')
       recorder.start(100) // Collect data every 100ms
       setMediaRecorder(recorder)
       setIsRecording(true)
@@ -163,13 +206,17 @@ export function ChatInput({
       // Start timer
       setRecordingTime(0)
       recordingTimerRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1)
+        setRecordingTime(prev => {
+          const newTime = prev + 1
+          console.log('🎙️ [RECORDING] Timer tick:', newTime, 'seconds')
+          return newTime
+        })
       }, 1000)
 
       toast.success('🎙️ Recording started - speak clearly into your microphone')
 
     } catch (error) {
-      console.error('Error starting recording:', error)
+      console.error('🎙️ [RECORDING] Error starting recording:', error)
       
       let errorMessage = 'Failed to start recording'
       if (error instanceof Error) {
@@ -188,9 +235,18 @@ export function ChatInput({
   }
 
   const stopRecording = () => {
+    console.log('🎙️ [RECORDING] Stop recording requested, current state:', {
+      isRecording,
+      mediaRecorderState: mediaRecorder?.state,
+      recordingTime,
+      hasTimer: !!recordingTimerRef.current
+    })
+    
     if (mediaRecorder && mediaRecorder.state === 'recording') {
-      console.log('Stopping recording...')
+      console.log('🎙️ [RECORDING] Stopping MediaRecorder...')
       mediaRecorder.stop()
+    } else {
+      console.warn('🎙️ [RECORDING] MediaRecorder not in recording state:', mediaRecorder?.state)
     }
     
     setIsRecording(false)
@@ -198,12 +254,14 @@ export function ChatInput({
     
     // Clear timer
     if (recordingTimerRef.current) {
+      console.log('🎙️ [RECORDING] Clearing recording timer')
       clearInterval(recordingTimerRef.current)
       recordingTimerRef.current = null
     }
     
     // Stop stream if still active
     if (streamRef.current) {
+      console.log('🎙️ [RECORDING] Stopping remaining stream tracks')
       streamRef.current.getTracks().forEach(track => track.stop())
       streamRef.current = null
     }
@@ -212,11 +270,16 @@ export function ChatInput({
   }
 
   const transcribeAudio = async (audioBlob: Blob, originalMimeType: string) => {
+    console.log('🔄 [TRANSCRIPTION] Starting transcription process...')
     setIsTranscribing(true)
     setRecordingError('')
 
     try {
-      console.log('Starting transcription process...')
+      console.log('🔄 [TRANSCRIPTION] Audio blob details:', {
+        size: audioBlob.size,
+        type: audioBlob.type,
+        originalMimeType
+      })
       
       // Determine the best filename and format for OpenAI
       let filename = 'recording.wav'
@@ -234,7 +297,7 @@ export function ChatInput({
         filename = 'recording.wav'
       }
 
-      console.log('Preparing audio file:', {
+      console.log('🔄 [TRANSCRIPTION] Preparing audio file:', {
         originalSize: audioBlob.size,
         originalType: originalMimeType,
         filename: filename,
@@ -251,7 +314,7 @@ export function ChatInput({
       
       formData.append('audio', audioFile)
 
-      console.log('Sending transcription request to Supabase Edge Function...')
+      console.log('🔄 [TRANSCRIPTION] Sending transcription request to Supabase Edge Function...')
 
       // Send to transcription endpoint
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transcribe-audio`, {
@@ -262,7 +325,7 @@ export function ChatInput({
         body: formData
       })
 
-      console.log('Transcription response received:', {
+      console.log('🔄 [TRANSCRIPTION] Transcription response received:', {
         status: response.status,
         statusText: response.statusText,
         ok: response.ok
@@ -272,9 +335,9 @@ export function ChatInput({
         let errorText = ''
         try {
           errorText = await response.text()
-          console.error('Transcription error response body:', errorText)
+          console.error('🔄 [TRANSCRIPTION] Error response body:', errorText)
         } catch (e) {
-          console.error('Could not read error response body')
+          console.error('🔄 [TRANSCRIPTION] Could not read error response body')
         }
         
         let errorMessage = 'Failed to transcribe audio'
@@ -294,7 +357,7 @@ export function ChatInput({
       }
 
       const data = await response.json()
-      console.log('Transcription response data:', data)
+      console.log('🔄 [TRANSCRIPTION] Transcription response data:', data)
 
       if (!data.success) {
         throw new Error(data.error || 'Transcription failed')
@@ -305,13 +368,15 @@ export function ChatInput({
       if (transcribedText && transcribedText.trim()) {
         // Replace the input with the transcription (voice-first approach)
         setInput(transcribedText)
+        console.log('🔄 [TRANSCRIPTION] Transcription successful:', transcribedText)
         toast.success(`✅ "${transcribedText.substring(0, 50)}${transcribedText.length > 50 ? '...' : ''}"`)
       } else {
+        console.warn('🔄 [TRANSCRIPTION] Empty transcription received')
         toast.warning('No speech detected in the recording. Please try speaking more clearly.')
       }
 
     } catch (error) {
-      console.error('Error transcribing audio:', error)
+      console.error('🔄 [TRANSCRIPTION] Error transcribing audio:', error)
       
       let errorMessage = 'Failed to transcribe audio. Please try again or use text input.'
       if (error instanceof Error) {
