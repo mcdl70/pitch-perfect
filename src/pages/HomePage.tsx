@@ -578,12 +578,101 @@ export function HomePage() {
           </div>
         </div>
 
-        {/* Right side - Visual placeholder */}
-        <div className="hero-visual h-96 flex items-center justify-center">
-          <div className="text-center text-muted-foreground">
-            <div className="text-sm font-medium mb-2">Interview Dashboard Preview</div>
-            <div className="text-xs">Coming Soon</div>
-          </div>
+        {/* Right side - Dashboard SVG */}
+        <div className="flex items-center justify-center p-8">
+          <svg 
+            width="100%" 
+            height="400" 
+            viewBox="0 0 400 300" 
+            fill="none" 
+            xmlns="http://www.w3.org/2000/svg" 
+            className="dashboard-svg max-w-md"
+          >
+            {/* Main dashboard frame */}
+            <rect 
+              x="20" 
+              y="20" 
+              width="360" 
+              height="260" 
+              rx="16" 
+              fill="white" 
+              stroke="#E8EAED" 
+              strokeWidth="2"
+              className="shadow-medium"
+            />
+            
+            {/* Header bar */}
+            <rect x="40" y="40" width="320" height="40" rx="8" fill="#F8F9FA"/>
+            <circle cx="60" cy="60" r="6" fill="#00D924"/>
+            <rect x="80" y="55" width="80" height="10" rx="5" fill="#E8EAED"/>
+            <rect x="320" y="55" width="20" height="10" rx="5" fill="#E8EAED"/>
+            
+            {/* Chart area background */}
+            <rect x="40" y="100" width="320" height="140" rx="8" fill="#FAFBFC" stroke="#F1F3F4"/>
+            
+            {/* Grid lines */}
+            <line x1="40" y1="130" x2="360" y2="130" stroke="#F1F3F4" strokeWidth="1"/>
+            <line x1="40" y1="160" x2="360" y2="160" stroke="#F1F3F4" strokeWidth="1"/>
+            <line x1="40" y1="190" x2="360" y2="190" stroke="#F1F3F4" strokeWidth="1"/>
+            <line x1="40" y1="220" x2="360" y2="220" stroke="#F1F3F4" strokeWidth="1"/>
+            
+            {/* Performance trend line (green) */}
+            <path 
+              id="performance-line" 
+              d="M60 200 Q120 160, 180 180 T300 140" 
+              stroke="#00D924" 
+              strokeWidth="4" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+              fill="none"
+            />
+            
+            {/* Skills assessment line (blue) */}
+            <path 
+              id="skills-line" 
+              d="M60 220 Q120 200, 180 190 T300 170" 
+              stroke="#4285F4" 
+              strokeWidth="4" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+              fill="none"
+            />
+            
+            {/* Data points for performance line */}
+            <circle className="data-point performance" cx="60" cy="200" r="5" fill="#00D924"/>
+            <circle className="data-point performance" cx="120" cy="160" r="5" fill="#00D924"/>
+            <circle className="data-point performance" cx="180" cy="180" r="5" fill="#00D924"/>
+            <circle className="data-point performance" cx="240" cy="150" r="5" fill="#00D924"/>
+            <circle className="data-point performance" cx="300" cy="140" r="5" fill="#00D924"/>
+
+            {/* Data points for skills line */}
+            <circle className="data-point skills" cx="60" cy="220" r="5" fill="#4285F4"/>
+            <circle className="data-point skills" cx="120" cy="200" r="5" fill="#4285F4"/>
+            <circle className="data-point skills" cx="180" cy="190" r="5" fill="#4285F4"/>
+            <circle className="data-point skills" cx="240" cy="180" r="5" fill="#4285F4"/>
+            <circle className="data-point skills" cx="300" cy="170" r="5" fill="#4285F4"/>
+
+            {/* Legend */}
+            <g className="legend">
+              <rect x="50" y="250" width="12" height="3" fill="#00D924" rx="1.5"/>
+              <text x="70" y="255" fontSize="12" fill="#5F6368" fontFamily="Inter">Performance Score</text>
+              <rect x="200" y="250" width="12" height="3" fill="#4285F4" rx="1.5"/>
+              <text x="220" y="255" fontSize="12" fill="#5F6368" fontFamily="Inter">Skills Assessment</text>
+            </g>
+
+            {/* Central insight icon */}
+            <g className="insight-icon" transform="translate(320, 100)">
+              <circle cx="20" cy="20" r="18" fill="#FFD700" opacity="0.9"/>
+              <path d="M20 12 L26 20 L20 28 L14 20 Z" fill="white"/>
+            </g>
+            
+            {/* Floating score cards */}
+            <g className="score-card" transform="translate(280, 40)">
+              <rect x="0" y="0" width="60" height="30" rx="6" fill="white" stroke="#E8EAED" strokeWidth="1"/>
+              <text x="30" y="12" fontSize="10" fill="#5F6368" textAnchor="middle" fontFamily="Inter">Score</text>
+              <text x="30" y="24" fontSize="14" fill="#00D924" textAnchor="middle" fontFamily="Inter" fontWeight="600">8.5</text>
+            </g>
+          </svg>
         </div>
       </div>
 
